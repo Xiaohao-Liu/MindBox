@@ -24,12 +24,36 @@
         </div>
         <el-input v-model="node_config.label" @change="__change_node_label" placeholder="请输入内容"></el-input>
       </el-card>
+      <div class="color_selector_board">
+        <div class="color_selector"> 
+          Box Fill: <el-color-picker
+          v-model="node_config.fill"
+          :predefine="predefineColors"
+          @change="__change_node_fill">
+        </el-color-picker>
+        </div>
+        <div class="color_selector"> 
+          Border: <el-color-picker
+          v-model="node_config.stroke"
+          :predefine="predefineColors"
+          @change="__change_node_stroke">
+        </el-color-picker>
+        </div>
+        <div class="color_selector"> 
+          Text Color: <el-color-picker
+          v-model="node_config.text_color"
+          :predefine="predefineColors"
+          @change="__change_node_text_color">
+        </el-color-picker>
+        </div>
+      </div>
       <el-card style="margin-top:10px;">
         <div slot="header" class="clearfix">
           <span>Note</span>
         </div>
         <el-input v-model="node_config.note" @change="__change_node_note" placeholder="请输入内容"></el-input>
       </el-card>
+      
         <div v-if="selected_node.store.data.idx!=0" class="btn" v-on:click="__del_node">Delete</div>
     </div>
     <div class="edge_config_board" v-if="edge_config.show">
@@ -40,6 +64,15 @@
         </div>
         <el-input v-model="edge_config.label" @change="__change_edge_label" placeholder="请输入内容"></el-input>
       </el-card>
+      <!-- <div class="color_selector_board">
+        <div class="color_selector"> 
+          Line: <el-color-picker
+          v-model="edge_config.stroke"
+          :predefine="predefineColors"
+          @change="__change_edge_stroke">
+        </el-color-picker>
+        </div>
+      </div> -->
       <div class="btn" v-on:click="__del_edge">Delete</div>
     </div>
     <div class="file_config_board" v-if="file_config.show">
@@ -87,6 +120,7 @@ export default {
       file_type:"mb",
       selected_node:null,
       selected_edge:null,
+      predefineColors:["#b39ddb","#f44336","#009688","#0d47a1"],
       tool_bar_list:[
         {
           name:"Arron Liu",
@@ -169,11 +203,15 @@ export default {
         title:'Node Config',
         label:"",
         note:"",
+        fill:"",
+        stroke:"",
+        text_color:""
       },
       edge_config:{
         show:false,
         title:'Edge Config',
-        label:""
+        label:"",
+        stroke:""
       },
       file_config:{
         show:false,
@@ -284,10 +322,19 @@ export default {
       this.tool_bar_list[this.tool_map[name]].enable=false;
     },
     __change_node_label:function(){
-      this.selected_node.updateAttrs({label:{text:this.node_config.label}})
+      this.selected_node.attr({label:{text:this.node_config.label}})
     },
     __change_node_note:function(){
       this.selected_node.updateData({note:this.node_config.note})
+    },
+    __change_node_fill:function(){
+      this.selected_node.attr({body:{fill:this.node_config.fill}})
+    },
+    __change_node_stroke:function(){
+      this.selected_node.attr({body:{stroke:this.node_config.stroke}})
+    },
+    __change_node_text_color:function(){
+      this.selected_node.attr({text:{fill:this.node_config.text_color}})
     },
     __change_edge_label:function(){
       if(this.edge_config.label==''){
@@ -296,6 +343,9 @@ export default {
         this.selected_edge.setLabels({attrs:{text:{text:' '+this.edge_config.label+' '}}})
       }
     },
+    // __change_edge_stroke:function(){
+    //   this.selected_edge.updateAttrs({path:{stroke:this.node_config.stroke}})
+    // },
     __add_events:function(){
       this.graph.on('node:selected', ( args) => { 
           this.selected_node = args.node;
@@ -303,6 +353,9 @@ export default {
           this.edge_config.show=false;
           this.node_config.label = this.selected_node.store.data.attrs.text.text;
           this.node_config.note = this.selected_node.store.data.data.note;
+          this.node_config.fill = this.selected_node.store.data.attrs.body.fill;
+          this.node_config.stroke = this.selected_node.store.data.attrs.body.stroke;
+          this.node_config.text_color = this.selected_node.store.data.attrs.text.fill;
           this.__enable("child")
           if(this.selected_node.store.data.idx!=0){
             this.__enable("sibling")
@@ -319,6 +372,7 @@ export default {
           this.selected_edge = args.edge;
           this.edge_config.show=true;
           this.node_config.show=false;
+          // this.edge_config.stroke = this.selected_edge.store.data.attrs.path.stroke;
           try{
             this.edge_config.label = this.selected_edge.getLabels()[0].attrs.text.text.trim();
            }catch{
@@ -789,5 +843,12 @@ export default {
     box-shadow: 0px 3px 10px rgba(0,0,0,.1);
 }
 }
-
+.color_selector_board{
+  .color_selector{
+        line-height: 40px;
+    display: flex;
+    margin: 5px;
+    justify-content: space-around;
+  }
+}
 </style>
