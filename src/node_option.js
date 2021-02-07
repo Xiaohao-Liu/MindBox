@@ -1,10 +1,12 @@
+
+
 module.exports={
     "first":{
         width: 120,
         height: 60,
         attrs: {
             body: {
-            stroke: '#7e57c2',
+            stroke: 'white',
             fill: '#b39ddb',
             rx: 20,
             ry: 20,
@@ -27,7 +29,7 @@ module.exports={
         height: 40,
         attrs: {
             body: {
-            stroke: '#b39ddb',
+            stroke: 'white',
             fill: '#d1c4e9',
             rx: 15,
             ry: 15,
@@ -49,7 +51,7 @@ module.exports={
         height: 20,
         attrs: {
             body: {
-            stroke: 'transparent',
+            stroke: 'white',
             fill: 'white',
             rx: 5,
             ry: 5,
@@ -91,22 +93,6 @@ module.exports={
         source:"",
         target: "",
         connector: { name: 'rounded' },
-        attrs:{
-            rect:{
-                stroke: 'black',
-            },
-            label:{
-                text:"",
-                fill:'black',
-            }
-        },
-        router: {
-            name: 'manhattan',
-            args: {
-              startDirections: ['bottom'],
-              endDirections: ['top'],
-            },
-        },
         // tools: {
         //     name: 'button-remove',
         //     args: { distance: -40 },

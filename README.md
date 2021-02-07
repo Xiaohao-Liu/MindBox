@@ -13,6 +13,8 @@ Inspired by **XMind**, I designed the MindBox with many necessary and useful Fea
 - file manager (open an online file)
 - ...
 
+You can config your gitee options in `src/index.js`.
+
 Enjoy it!
 
 **Project setup**

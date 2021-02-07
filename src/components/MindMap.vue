@@ -51,7 +51,13 @@
         <div slot="header" class="clearfix">
           <span>Note</span>
         </div>
-        <el-input v-model="node_config.note" @change="__change_node_note" placeholder="请输入内容"></el-input>
+        <el-input
+          type="textarea"
+          :autosize="{ minRows: 2, maxRows: 4}"
+          placeholder="请输入内容"
+          v-model="node_config.note"
+          @change="__change_node_note">
+        </el-input>
       </el-card>
       
         <div v-if="selected_node.store.data.idx!=0" class="btn" v-on:click="__del_node">Delete</div>
@@ -79,7 +85,7 @@
       <div class="board_title">{{file_config.title}}</div>
       <div class="btn blue iconfont icon-refresh" v-on:click="this.__get_gitee_files"> Refresh</div>
       <div class="file_item iconfont icon-file" v-for="item in file_config.list" :key="item.path">
-        <div  style="width:calc(100% - 30px);float:right;"  v-on:click="__load_gitee_file(item.path,item.sha)">
+        <div  style="width:calc(100% - 30px);float:right;white-space: nowrap;overflow: hidden;text-overflow: ellipsis;"  v-on:click="__load_gitee_file(item.path,item.sha)">
           {{item.path}}
         </div>
       </div>
@@ -103,6 +109,67 @@ const dagreLayout = new Layout({
     return parseInt(opt.height/2);
   },
 })
+Graph.registerEdge(
+  'edge',
+  {
+    inherit: 'edge',
+    attrs: {
+      line: {
+        stroke: '#333',
+      },
+    },
+    connector: { name: 'rounded' },
+    router: {
+      name: 'manhattan',
+      args: {
+        startDirections: ['bottom'],
+        endDirections: ['top'],
+      },
+  },
+    defaultLabel: {
+      markup: [
+        {
+          tagName: 'rect',
+          selector: 'body',
+        },
+        {
+          tagName: 'text',
+          selector: 'label',
+        },
+      ],
+      attrs: {
+        label: {
+          fill: 'trsnaparent',
+          fontSize: 14,
+          textAnchor: 'middle',
+          textVerticalAnchor: 'middle',
+          pointerEvents: 'none',
+        },
+        body: {
+          ref: 'label',
+          fill: 'white',
+          stroke: '#333',
+          strokeWidth: 2,
+          rx: 4,
+          ry: 4,
+          refWidth: '140%',
+          refHeight: '140%',
+          refX: '-20%',
+          refY: '-20%',
+        },
+      },
+      position: {
+        distance: 0.5,
+        options: {
+          absoluteDistance: true,
+          reverseDistance: true,
+        },
+      },
+      
+    },
+  },
+  true,
+);
 import node_option from '../node_option';
 import gitee_info from '../index';
 import "../assets/iconfont/iconfont.css"
@@ -264,6 +331,9 @@ export default {
           movable: true,
           showNodeSelectionBox: true,
         },
+        connecting: {
+          allowBlank: false,
+        },
         panning:true,
         background:{
           color:"#efefef"
@@ -381,6 +451,11 @@ export default {
            }
           // console.log(this.selected_node)
       })
+      //
+      this.graph.bindKey('meta', () => {
+        this.selected_node && this.selected_node.attr('body/magnet', !this.selected_node.attr('body/magnet'))
+      })
+
       // back to default
       this.graph.on('blank:click', ( ) => { 
           this.edge_config.show=false;
