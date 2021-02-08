@@ -20,36 +20,13 @@
       <div class="board_title">{{node_config.title}}</div>
       <el-card>
         <div slot="header" class="clearfix">
-          <span>Label</span>
+          <span>标题</span>
         </div>
         <el-input v-model="node_config.label" @change="__change_node_label" placeholder="请输入内容"></el-input>
       </el-card>
-      <div class="color_selector_board">
-        <div class="color_selector"> 
-          Box Fill: <el-color-picker
-          v-model="node_config.fill"
-          :predefine="predefineColors"
-          @change="__change_node_fill">
-        </el-color-picker>
-        </div>
-        <div class="color_selector"> 
-          Border: <el-color-picker
-          v-model="node_config.stroke"
-          :predefine="predefineColors"
-          @change="__change_node_stroke">
-        </el-color-picker>
-        </div>
-        <div class="color_selector"> 
-          Text Color: <el-color-picker
-          v-model="node_config.text_color"
-          :predefine="predefineColors"
-          @change="__change_node_text_color">
-        </el-color-picker>
-        </div>
-      </div>
       <el-card style="margin-top:10px;">
         <div slot="header" class="clearfix">
-          <span>Note</span>
+          <span>备注</span>
         </div>
         <el-input
           type="textarea"
@@ -59,27 +36,100 @@
           @change="__change_node_note">
         </el-input>
       </el-card>
+      <div class="color_selector_board">
+        <div class="color_selector">
+        <el-row>
+        <el-col :span="12">
+          填充颜色: 
+        </el-col>
+        <el-col :span="12">
+        <el-color-picker
+          v-model="node_config.fill"
+          :predefine="predefineColors"
+          @change="__change_node_fill">
+        </el-color-picker></el-col></el-row>
+        </div>
+        <div class="color_selector">
+        <el-row>
+        <el-col :span="12">
+          边框颜色: 
+        </el-col>
+        <el-col :span="12"><el-color-picker
+          v-model="node_config.stroke"
+          :predefine="predefineColors"
+          @change="__change_node_stroke">
+        </el-color-picker></el-col></el-row>
+        </div>
+        <div class="color_selector">
+        <el-row>
+        <el-col :span="12">
+          文字颜色: 
+        </el-col>
+        <el-col :span="12">
+          <el-color-picker
+          v-model="node_config.text_color"
+          :predefine="predefineColors"
+          @change="__change_node_text_color">
+        </el-color-picker>
+        </el-col>
+          </el-row>
+        </div>
+      </div>
       
+      <el-row>
+        <el-col :span="12">
+          链接
+        </el-col>
+        <el-col :span="12">
+          <el-switch
+          v-model="node_config.can_link"
+          active-color="#13ce66"
+          inactive-color="#ff4949"
+          @change="__change_node_can_link">
+        </el-switch>
+        </el-col>
+      </el-row>
+        
         <div v-if="selected_node.store.data.idx!=0" class="btn" v-on:click="__del_node">Delete</div>
     </div>
     <div class="edge_config_board" v-if="edge_config.show">
       <div class="board_title">{{edge_config.title}}</div>
       <el-card>
         <div slot="header" class="clearfix">
-          <span>Label</span>
+          <span>标题</span>
         </div>
         <el-input v-model="edge_config.label" @change="__change_edge_label" placeholder="请输入内容"></el-input>
       </el-card>
-      <!-- <div class="color_selector_board">
-        <div class="color_selector"> 
-          Line: <el-color-picker
-          v-model="edge_config.stroke"
-          :predefine="predefineColors"
-          @change="__change_edge_stroke">
-        </el-color-picker>
-        </div>
-      </div> -->
       <div class="btn" v-on:click="__del_edge">Delete</div>
+    </div>
+    <div class="group_config_board" v-if="group_config.show">
+      <div class="board_title">{{group_config.title}}</div>
+      <div class="color_selector_board">
+        <div class="color_selector">
+        <el-row>
+        <el-col :span="12">
+          填充颜色: 
+        </el-col>
+        <el-col :span="12">
+        <el-color-picker
+          v-model="node_config.fill"
+          :predefine="predefineColors"
+          @change="__change_node_fill">
+        </el-color-picker></el-col></el-row>
+        </div>
+        <div class="color_selector">
+        <el-row>
+        <el-col :span="12">
+          边框颜色: 
+        </el-col>
+        <el-col :span="12"><el-color-picker
+          v-model="node_config.stroke"
+          :predefine="predefineColors"
+          @change="__change_node_stroke">
+        </el-color-picker></el-col></el-row>
+        </div>
+      </div>
+      <div class="btn" v-on:click="__del_group">Delete</div>
     </div>
     <div class="file_config_board" v-if="file_config.show">
       <div class="board_title">{{file_config.title}}</div>
@@ -210,6 +260,26 @@ export default {
           click:()=>{this.__file_rename()},
         },
         {
+          name:"撤销",
+          width:40,
+          style:"",
+          enable:false,
+          show:true,
+          icon:"iconfont icon-redo",
+          title:"",
+          click:()=>{this.graph.undo()},
+        },
+        {
+          name:"重做",
+          width:40,
+          style:"",
+          enable:false,
+          show:true,
+          icon:"iconfont icon-undo",
+          title:"",
+          click:()=>{this.graph.redo()},
+        },
+        {
           name:"子主题",
           width:40,
           style:"",
@@ -228,6 +298,16 @@ export default {
           icon:"iconfont icon-create_sibling_node",
           title:"",
           click:()=>{this.__tool_add_sibling()},
+        },
+        {
+          name:"群组",
+          width:40,
+          style:"",
+          enable:false,
+          show:true,
+          icon:"iconfont icon-border",
+          title:"",
+          click:()=>{this.__tool_add_group()},
         },
         {
           name:"排布",
@@ -262,21 +342,31 @@ export default {
       ],
       tool_map:{
         "file":1,
-        "child":2,
-        "sibling":3
+        "undo":2,
+        "redo":3,
+        "child":4,
+        "sibling":5,
+        "group":6,
       },
       node_config:{
         show:false,
-        title:'Node Config',
+        title:'编辑节点',
         label:"",
         note:"",
         fill:"",
         stroke:"",
-        text_color:""
+        text_color:"",
+        can_link:false,
       },
       edge_config:{
         show:false,
-        title:'Edge Config',
+        title:'编辑链接',
+        label:"",
+        stroke:""
+      },
+      group_config:{
+        show:false,
+        title:'编辑群组',
         label:"",
         stroke:""
       },
@@ -309,6 +399,11 @@ export default {
     __init_graph:function(){
         const default_graph_option={
         container: document.getElementById('antv_container'),
+        history:true,
+        clipboard: {
+          enabled: true,
+          useLocalStorage: true,
+        },
         grid: {
           size: 10,      // 网格大小 10px
           visible: true, // 渲染网格背景
@@ -326,7 +421,7 @@ export default {
         },
         selecting: {
           enabled: true,
-          multiple: false,
+          multiple: true,
           rubberband: true,
           movable: true,
           showNodeSelectionBox: true,
@@ -394,6 +489,9 @@ export default {
     __change_node_label:function(){
       this.selected_node.attr({label:{text:this.node_config.label}})
     },
+    __change_node_can_link:function(){
+      this.selected_node && this.selected_node.attr('body/magnet', this.node_config.can_link)
+    },
     __change_node_note:function(){
       this.selected_node.updateData({note:this.node_config.note})
     },
@@ -413,20 +511,38 @@ export default {
         this.selected_edge.setLabels({attrs:{text:{text:' '+this.edge_config.label+' '}}})
       }
     },
-    // __change_edge_stroke:function(){
-    //   this.selected_edge.updateAttrs({path:{stroke:this.node_config.stroke}})
-    // },
     __add_events:function(){
       this.graph.on('node:selected', ( args) => { 
+          const cells = this.graph.getSelectedCells();
           this.selected_node = args.node;
-          this.node_config.show=true;
-          this.edge_config.show=false;
           this.node_config.label = this.selected_node.store.data.attrs.text.text;
-          this.node_config.note = this.selected_node.store.data.data.note;
           this.node_config.fill = this.selected_node.store.data.attrs.body.fill;
           this.node_config.stroke = this.selected_node.store.data.attrs.body.stroke;
           this.node_config.text_color = this.selected_node.store.data.attrs.text.fill;
+          this.node_config.can_link = this.selected_node.attr('body/magnet');
+          if(cells.length >1){
+            // group
+            // console.log(cells)
+            this.__enable("group");
+            this.__disable("child")
+            this.__disable("sibling")
+            this.group_config.show=false;
+            this.node_config.show=false;
+            this.edge_config.show=false;
+            return false;
+          }
+          if(this.selected_node.store.data.idx==4){
+            this.group_config.show=true;
+            this.node_config.show=false;
+            this.edge_config.show=false;
+            return false;
+          }
+          this.node_config.show=true;
+          this.edge_config.show=false;
+          this.group_config.show=false;
+          this.__disable("group");
           this.__enable("child")
+          this.node_config.note = this.selected_node.store.data.data.note;
           if(this.selected_node.store.data.idx!=0){
             this.__enable("sibling")
           }
@@ -437,11 +553,13 @@ export default {
           this.node_config.show=false;
           this.__disable("child")
           this.__disable("sibling")
+          this.__disable("group");
       })
       this.graph.on('edge:click', ( args) => { 
           this.selected_edge = args.edge;
           this.edge_config.show=true;
           this.node_config.show=false;
+          this.group_config.show=false;
           // this.edge_config.stroke = this.selected_edge.store.data.attrs.path.stroke;
           try{
             this.edge_config.label = this.selected_edge.getLabels()[0].attrs.text.text.trim();
@@ -451,24 +569,62 @@ export default {
            }
           // console.log(this.selected_node)
       })
-      //
-      this.graph.bindKey('meta', () => {
-        this.selected_node && this.selected_node.attr('body/magnet', !this.selected_node.attr('body/magnet'))
-      })
 
-      // back to default
+      this.history = this.graph.history
+      this.history.on('change', () => {
+        // console.log(this.tool_bar_list[this.tool_map['redo']])
+          this.history.canRedo()?this.__enable("redo"):this.__disable("redo");
+          this.history.canUndo()?this.__enable("undo"):this.__disable("undo");
+      })
       this.graph.on('blank:click', ( ) => { 
           this.edge_config.show=false;
           this.node_config.show=false;
-      })
+          this.group_config.show=false;
+          this.file_config.show=false;
+      });
+      
     },
     __add_keyboard_events:function(){
       this.graph.bindKey('enter',()=>{this.__tool_add_sibling()})
       this.graph.bindKey('ctrl+enter',()=>{this.__tool_add_child()})
       this.graph.bindKey('backspace',()=>{this.__del_node()})
+      this.graph.bindKey('ctrl+c', () => {
+        const cells = this.graph.getSelectedCells()
+        if (cells.length) {
+          const new_cells = []
+          cells.forEach(cell=>{
+            if(cell.store.data.idx!=0){
+              new_cells.push(cell);
+            }
+          })
+          this.graph.copy(new_cells)
+        }
+        return false
+      })
+      this.graph.bindKey('ctrl+v', () => {
+          if (!this.graph.isClipboardEmpty()) {
+            const cells = this.graph.paste({ offset: 32 })
+            this.graph.cleanSelection()
+            this.graph.select(cells)
+          }
+          return false
+        })
+      this.graph.bindKey('ctrl+z', () => {
+        this.history.canUndo()?this.graph.undo():false;
+      })
+
+
     },
     __del_node:function(){
       if(this.selected_node==null || this.selected_node.store.data.idx == 0)return;
+      this.graph.removeNode(this.selected_node.id);
+      this.$message('删除成功');
+    },
+    __del_group:function(){
+      if(this.selected_node==null || this.selected_node.store.data.idx != 4)return;
+      this.selected_node.getChildren().forEach(child=>{
+        this.selected_node.unembed(child)
+      })
       this.graph.removeNode(this.selected_node.id);
       this.$message('删除成功');
     },
@@ -524,6 +680,31 @@ export default {
         this.$message('添加主题成功');
         this.__tool_dagre_graph();
     },
+    __tool_add_group:function(){
+        const cells = this.graph.getSelectedCells();
+        const parent_option = node_option["group"];
+        let padding = 10;
+        if(cells.length){
+          let x =0, y = 0, height = 0, width = 0;
+          let parent = this.graph.addNode(parent_option);
+          let all_x = [], all_y = [];
+          cells.forEach(cell=>{
+            all_x.push(cell.store.data.position.x - padding);
+            all_y.push(cell.store.data.position.y  - padding);
+            all_x.push(cell.store.data.position.x + cell.store.data.size.width  + padding);
+            all_y.push(cell.store.data.position.y + cell.store.data.size.height + padding);
+            parent.addChild(cell)
+          })
+          //compute x, y
+          x = Math.min.apply(null, all_x);
+          y = Math.min.apply(null,all_y);
+          height = Math.max.apply(null,all_y) - y;
+          width = Math.max.apply(null,all_x) - x;
+          parent.setProp('size', { width: width, height: height })
+          parent.setProp('position', { x: x, y: y })
+        }
+        return false;
+    },
     __tool_dagre_graph:function(){
       var data= this.__extract_graph_json();
       let select_id = 0;
@@ -542,7 +723,7 @@ export default {
           }
       })
       newdata.nodes = newdata.nodes.concat(data.ignore.nodes)
-      console.log(newdata)
+      // console.log(newdata)
       this.graph.fromJSON(newdata);
       if (select_id!=0)this.graph.select(select_id)
     },
@@ -847,6 +1028,19 @@ export default {
         padding: 10px;
     box-sizing: border-box;
 }
+.group_config_board{
+  height: calc(100% - 60px);
+    width: 20%;
+    min-width: 200px;
+    position: fixed;
+    right: 0px;
+    top: 60px;
+    background: rgba(255,255,255,.75);
+    box-shadow: 0px 0px 10px rgba(0,0,0,.2);
+    backdrop-filter: blur(10px);
+        padding: 10px;
+    box-sizing: border-box;
+}
 .board_title{
     font-size: 1.2em;
     font-weight: bold;
@@ -921,9 +1115,7 @@ export default {
 .color_selector_board{
   .color_selector{
         line-height: 40px;
-    display: flex;
     margin: 5px;
-    justify-content: space-around;
   }
 }
 </style>

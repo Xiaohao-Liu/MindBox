@@ -21,6 +21,7 @@ module.exports={
         data:{
             note:""
         },
+        zIndex: 10,
         ignore_layout:false,
         idx:0,
     },
@@ -44,6 +45,7 @@ module.exports={
             note:""
         },
         idx:1,
+        zIndex: 10,
         ignore_layout:false,
     },
     "others":{
@@ -65,6 +67,7 @@ module.exports={
             note:""
         },
         idx:2,
+        zIndex: 10,
         ignore_layout:false,
     },
     "note":{
@@ -86,6 +89,7 @@ module.exports={
         data:{
             note:""
         },
+        zIndex: 10,
         idx:3,
         ignore_layout:true,
     },
@@ -93,9 +97,29 @@ module.exports={
         source:"",
         target: "",
         connector: { name: 'rounded' },
+        zIndex: 10,
         // tools: {
         //     name: 'button-remove',
         //     args: { distance: -40 },
         //   },
+    },
+    "group":{
+        width: 100,
+        height: 40,
+        label:"",
+        attrs: {
+            body: {
+                stroke: 'black',
+                fill: '#eee',
+                strokeDasharray:5,
+                rx: 5,
+                ry: 5,
+            },
+        },
+        data:{
+            note:"",
+        },
+        zIndex: 1,
+        idx:4,
     },
 }
