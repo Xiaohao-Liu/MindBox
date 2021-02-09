@@ -1,7 +1,12 @@
 <template>
   <el-container class="main" v-loading="loading">
     <el-header>
-      <div :class="'header_item '+(item.enable?'enable':'disable')" :style="'width:'+item.width+'px;'+item.style" v-for="item in tool_bar_list" :key="item.name">
+      <div 
+      :class="'header_item '+(item.enable?'enable':'disable')" 
+      :style="'width:'+item.width+'px;'+item.style" 
+      v-for="item in tool_bar_list" :key="item.name"
+      v-show="item.show"
+      >
         <div class="header_btn" v-on:click="(item.enable&&item.click())">
           <i :class="item.icon"/> {{item.title}}
         </div>
@@ -9,14 +14,23 @@
       </div>
     </el-header>
     <el-main style="height:calc(100% - 60px);padding:0px;" id="antv_container"></el-main>
+    <el-card v-show="pushed_pic_config.show" class="pic_upload_board" v-loading="pushed_pic_config.loadding">
+        <img id="pushed_image" :src="pushed_pic_config.base64||pushed_pic_config.url" style="width:100%;"/>  
+          <p v-show="pushed_pic_config.base64=='' && pushed_pic_config.url==''  && !pushed_pic_config.pushed" style="text-align:center;">NO IMAGE!</p>   
+          <el-input placeholder="照片名称" v-model="pushed_pic_config.name" v-show="!pushed_pic_config.pushed && pushed_pic_config.url.length==0">
+              <el-button slot="append" icon="el-icon-upload" v-on:click="push_a_pic"></el-button>
+          </el-input>
+          <el-input placeholder="照片链接" v-model="pushed_pic_config.url" style="margin-top:10px;"></el-input>
+          <div class="btn green" v-if="pushed_pic_config.url.length>0" v-on:click="__tool_add_pic_2">添加到画布</div>
+    </el-card>
     <div class="first_load_cover" v-if="first_load">
       <div class="first_load_board">
       Choose a Operation:
-      <div class="btn green" v-on:click="__init_a_blank_project"><i class="el-icon-check"/> Create</div>
-      <div class="btn green" v-on:click="__init_an_online_project" v-if="gitee_enable"><i class="el-icon-check"/> Open</div>
+      <div class="btn green iconfont icon-new" v-on:click="__init_a_blank_project"> Create</div>
+      <div class="btn green iconfont icon-storage" v-on:click="__init_an_online_project" v-if="gitee_enable"> Open</div>
     </div>
     </div>
-    <div class="node_config_board" v-if="node_config.show">
+    <div class="config_board node_config_board" v-if="node_config.show">
       <div class="board_title">{{node_config.title}}</div>
       <el-card>
         <div slot="header" class="clearfix">
@@ -92,7 +106,7 @@
         
         <div v-if="selected_node.store.data.idx!=0" class="btn" v-on:click="__del_node">Delete</div>
     </div>
-    <div class="edge_config_board" v-if="edge_config.show">
+    <div class="config_board edge_config_board" v-if="edge_config.show">
       <div class="board_title">{{edge_config.title}}</div>
       <el-card>
         <div slot="header" class="clearfix">
@@ -102,7 +116,7 @@
       </el-card>
       <div class="btn" v-on:click="__del_edge">Delete</div>
     </div>
-    <div class="group_config_board" v-if="group_config.show">
+    <div class="config_board group_config_board" v-if="group_config.show">
       <div class="board_title">{{group_config.title}}</div>
       <div class="color_selector_board">
         <div class="color_selector">
@@ -131,7 +145,17 @@
       </div>
       <div class="btn" v-on:click="__del_group">Delete</div>
     </div>
-    <div class="file_config_board" v-if="file_config.show">
+    <div class="config_board image_config_board" v-if="image_config.show">
+      <div class="board_title">{{image_config.title}}</div>
+      <el-card>
+        <div slot="header" class="clearfix">
+          <span>图片链接</span>
+        </div>
+        <el-input v-model="image_config.url" @change="__change_image_url" placeholder="请输入内容"></el-input>
+      </el-card>
+      <div class="btn" v-on:click="__del_image">Delete</div>
+    </div>
+    <div class="config_board file_config_board" v-if="file_config.show">
       <div class="board_title">{{file_config.title}}</div>
       <div class="btn blue iconfont icon-refresh" v-on:click="this.__get_gitee_files"> Refresh</div>
       <div class="file_item iconfont icon-file" v-for="item in file_config.list" :key="item.path">
@@ -144,7 +168,7 @@
 </template>
 
 <script>
-const $ = require("jquery");
+// const $ = require("jquery");
 import { Graph } from '@antv/x6';
 import { Layout } from '@antv/layout';
 const dagreLayout = new Layout({
@@ -222,7 +246,10 @@ Graph.registerEdge(
 );
 import node_option from '../node_option';
 import gitee_info from '../index';
+import {GiteeAPI} from "../api";
+const gAPI = new GiteeAPI(gitee_info);
 import "../assets/iconfont/iconfont.css"
+
 export default {
   name: 'HelloWorld',
   props: {
@@ -235,9 +262,11 @@ export default {
       gitee_enable:gitee_info.enable,
       file_name:"untitled",
       file_type:"mb",
+      online_file:false,
       selected_node:null,
       selected_edge:null,
       predefineColors:["#b39ddb","#f44336","#009688","#0d47a1"],
+      request_lock:false,
       tool_bar_list:[
         {
           name:"Arron Liu",
@@ -314,7 +343,7 @@ export default {
           width:40,
           style:"",
           enable:true,
-          show:true,
+          show:false,
           icon:"iconfont icon-tree",
           title:"",
           click:()=>{this.__tool_dagre_graph()},
@@ -328,6 +357,16 @@ export default {
           icon:"iconfont icon-note",
           title:"",
           click:()=>{this.__tool_add_note()},
+        },
+        {
+          name:"图片",
+          width:40,
+          style:"",
+          enable:true,
+          show:true,
+          icon:"iconfont icon-pic",
+          title:"",
+          click:()=>{this.__tool_add_pic()},
         },
         {
           name:"上传",
@@ -347,6 +386,14 @@ export default {
         "child":4,
         "sibling":5,
         "group":6,
+      },
+      pushed_pic_config:{
+        show:false,
+        name:"",
+        base64:"",
+        pushed:false,
+        raw:"",
+        url:"",
       },
       node_config:{
         show:false,
@@ -370,6 +417,11 @@ export default {
         label:"",
         stroke:""
       },
+      image_config:{
+        show:false,
+        title:'编辑图片',
+        url:"",
+      },
       file_config:{
         show:false,
         title:'Files',
@@ -386,12 +438,12 @@ export default {
     this.__add_events();
     this.__add_keyboard_events();
   },
-  methods:{
+  methods:{ 
     index:function(){
       if(gitee_info.enable){
         this.file_config.show = !this.file_config.show;
         if(this.file_config.show==true){
-          this.__get_gitee_files();
+          if(this.can_request()){this.__get_gitee_files();this.send_a_request()}
         }
       }
       else{alert("MindMap\nDesined by Arron Liu.")}
@@ -422,7 +474,7 @@ export default {
         selecting: {
           enabled: true,
           multiple: true,
-          rubberband: true,
+          rubberband: false,
           movable: true,
           showNodeSelectionBox: true,
         },
@@ -436,10 +488,27 @@ export default {
       }
       this.graph = new Graph(default_graph_option);
     },
+    send_a_request:function(){
+      this.request_lock=true;
+      setTimeout(()=>{
+        this.request_lock=false;
+      },2000)
+    },
+    can_request:function(){
+      if(this.request_lock==true){
+        this.$notify({
+            title: '请求速率过快',
+            message: "2s后重试"
+        });
+        return false;
+      }
+      return true;
+    },
     __init_an_online_project:function(){
       this.file_config.show=true;
       this.__get_gitee_files();
       this.first_load=false;
+      this.online_file=true;
     },
     __init_a_blank_project:function(){
       this.graph.fromJSON({})
@@ -450,17 +519,34 @@ export default {
       this.file_name = "untitled";
       this.tool_bar_list[this.tool_map['file']].title=this.file_name;
       this.first_load=false;
+      this.online_file=false;
     },
     __extract_graph_json:function(){
-        var data={nodes:[],edges:[]};
+        const data={nodes:[],edges:[]};
         const jsondata = this.graph.toJSON();
-        var ignore_data={nodes:[]}
+        console.log(jsondata)
+        const ignore_data={nodes:[]}
+        const children_data = {nodes:[]}
+        const children_set = new Set();
+        jsondata.cells.forEach(item=>{
+          if("children" in item && item.children.length >0){
+            item.children.forEach(c=>{children_set.add(c)})
+          }
+        })
         jsondata.cells.forEach(item=>{
             if(item.ignore_layout == true){
               let d = {};
               for(let k in item)d[k]=item[k];
               ignore_data.nodes.push(d)
               return
+            }
+            if(children_set.has(item.id)){
+              if(item.shape!="edge"){
+                let d = {};
+                for(let k in item)d[k]=item[k];
+                children_data.nodes.push(d)
+                return
+              }
             }
             if(item.shape=="rect"){
                 let d = {};
@@ -478,7 +564,7 @@ export default {
                 data.edges.push(d)
             }
         })
-        return {"data":data,"ignore":ignore_data};
+        return {"data":data,"ignore":ignore_data,"children":children_data};
     },
     __enable:function(name){
       this.tool_bar_list[this.tool_map[name]].enable=true;
@@ -487,7 +573,10 @@ export default {
       this.tool_bar_list[this.tool_map[name]].enable=false;
     },
     __change_node_label:function(){
-      this.selected_node.attr({label:{text:this.node_config.label}})
+      let w = this.node_config.label.length * 16;
+      let size = this.selected_node.getProp("size")
+      this.selected_node.setProp("size",{width:w,height:size.height})
+      this.selected_node.attr({text:{text:this.node_config.label}})
     },
     __change_node_can_link:function(){
       this.selected_node && this.selected_node.attr('body/magnet', this.node_config.can_link)
@@ -511,15 +600,13 @@ export default {
         this.selected_edge.setLabels({attrs:{text:{text:' '+this.edge_config.label+' '}}})
       }
     },
+    __change_image_url:function(){
+      this.selected_node.attr({image:{"xlink:href":this.image_config.url}})
+    },
     __add_events:function(){
       this.graph.on('node:selected', ( args) => { 
           const cells = this.graph.getSelectedCells();
           this.selected_node = args.node;
-          this.node_config.label = this.selected_node.store.data.attrs.text.text;
-          this.node_config.fill = this.selected_node.store.data.attrs.body.fill;
-          this.node_config.stroke = this.selected_node.store.data.attrs.body.stroke;
-          this.node_config.text_color = this.selected_node.store.data.attrs.text.fill;
-          this.node_config.can_link = this.selected_node.attr('body/magnet');
           if(cells.length >1){
             // group
             // console.log(cells)
@@ -529,17 +616,31 @@ export default {
             this.group_config.show=false;
             this.node_config.show=false;
             this.edge_config.show=false;
+            this.image_config.show = false;
             return false;
           }
+          if(this.selected_node.shape=="image"){
+            // console.log("image")
+            this.image_config.show = true;
+            this.image_config.url = this.selected_node.attr("image")["xlink:href"];
+            return false;
+          }
+          this.node_config.label = this.selected_node.attr("text").text;
+          this.node_config.fill = this.selected_node.attr("body").fill;
+          this.node_config.stroke = this.selected_node.attr("body").stroke;
+          this.node_config.text_color = this.selected_node.attr("text").fill;
+          this.node_config.can_link = this.selected_node.attr('body/magnet');
           if(this.selected_node.store.data.idx==4){
             this.group_config.show=true;
             this.node_config.show=false;
             this.edge_config.show=false;
+            this.image_config.show = false;
             return false;
           }
           this.node_config.show=true;
           this.edge_config.show=false;
           this.group_config.show=false;
+          this.image_config.show = false;
           this.__disable("group");
           this.__enable("child")
           this.node_config.note = this.selected_node.store.data.data.note;
@@ -569,7 +670,13 @@ export default {
            }
           // console.log(this.selected_node)
       })
-
+      this.graph.on('edge:connected', (args) => {
+        if (args.isNew) {
+        const parentid = args.edge.store.data.source.cell;
+        const childid = args.edge.store.data.target.cell;
+        this.graph.getCell(childid).setData({parent:parentid})
+        }
+      })
       this.history = this.graph.history
       this.history.on('change', () => {
         // console.log(this.tool_bar_list[this.tool_map['redo']])
@@ -581,8 +688,9 @@ export default {
           this.node_config.show=false;
           this.group_config.show=false;
           this.file_config.show=false;
+          this.image_config.show = false;
       });
-      
+      this.__add_paste_event()
     },
     __add_keyboard_events:function(){
       this.graph.bindKey('enter',()=>{this.__tool_add_sibling()})
@@ -612,12 +720,52 @@ export default {
       this.graph.bindKey('ctrl+z', () => {
         this.history.canUndo()?this.graph.undo():false;
       })
+      this.graph.bindKey('ctrl+s', () => {
+        this.__upload_to_gitee();
+      })
+      this.graph.bindKey('ctrl+n', () => {
+        this.__init_a_blank_project();
+      })
 
-
+    },
+    __add_paste_event:function(){
+        const stopwords = ",.'\":; "
+        document.addEventListener('paste', (event) =>{
+            if(!this.pushed_pic_config.show){
+                return;
+            }
+            
+            var items = event.clipboardData && event.clipboardData.items;
+            var file = null;
+            var reader  = new FileReader();
+            if (items && items.length) {
+                // 检索剪切板items
+                for (var i = 0; i < items.length; i++) {
+                    if (items[i].type.indexOf('image') !== -1) {
+                        file = items[i].getAsFile();
+                        break;
+                    }
+                }
+            }
+            var name = this.file_name.substring(0,15).toLowerCase();
+            for(var w =0;w<stopwords.length;w++){
+                name = name.split(stopwords[w]).join("_")
+            }
+            name= name+"_1.png"
+            reader.onload = (event)=>{
+                this.pushed_pic_config.base64 = event.target.result;
+                this.pushed_pic_config.name = name;
+                this.pushed_pic_config.pushed = false;
+            }
+            if(file){
+                reader.readAsDataURL(file)
+            }
+        });
     },
     __del_node:function(){
       if(this.selected_node==null || this.selected_node.store.data.idx == 0)return;
       this.graph.removeNode(this.selected_node.id);
+      this.node_config.show = false;
       this.$message('删除成功');
     },
     __del_group:function(){
@@ -625,17 +773,48 @@ export default {
       this.selected_node.getChildren().forEach(child=>{
         this.selected_node.unembed(child)
       })
+      this.group_config.show = false;
       this.graph.removeNode(this.selected_node.id);
       this.$message('删除成功');
     },
     __del_edge:function(){
       this.graph.removeEdge(this.selected_edge.id);
+      this.edge_config.show = false;
+      this.$message('删除成功');
+    },
+    __del_image:function(){
+      if(this.selected_node==null || this.selected_node.store.data.idx == 0)return;
+      this.graph.removeNode(this.selected_node.id);
+      this.image_config.show = false;
       this.$message('删除成功');
     },
     __tool_add_note:function(){
       let d = {};
       for(let k in node_option['note'])d[k] = node_option['note'][k];
+      let p = this.graph.pageToLocal(window.innerWidth/2,window.innerHeight/2);
+      d.x = p.x;
+      d.y = p.y;
       this.graph.addNode(d)
+    },
+    __tool_add_pic:function(){
+      this.pushed_pic_config.show = !this.pushed_pic_config.show;
+    },
+    __tool_add_pic_2:function(){
+      let d = {};
+      for(let k in node_option['image'])d[k] = node_option['image'][k];
+      let p = this.graph.pageToLocal(window.innerWidth/2,window.innerHeight/2);
+      d.x = p.x;
+      d.y = p.y;
+      d.width = document.getElementById("pushed_image").offsetWidth;
+      d.height = document.getElementById("pushed_image").offsetHeight;
+      d.imageUrl = this.pushed_pic_config.url;
+      // console.log(d)
+      this.graph.addNode(d)
+      this.pushed_pic_config.pushed = false;
+      this.pushed_pic_config.show = false;
+      this.pushed_pic_config.url = "";
+      this.pushed_pic_config.name = "";
+      this.pushed_pic_config.base64 = "";
     },
     __tool_add_child:function(){
         if(this.selected_node==null)return;
@@ -649,6 +828,8 @@ export default {
         s_d.parent=this.selected_node.id;
 
         let t_node = this.graph.addNode(s_d);
+        t_node.setData({parent:s_d.parent})
+        t_node.setProp("position",{x:this.selected_node.store.data.position.x + parseInt(Math.random()*10),y: this.selected_node.store.data.position.y + this.selected_node.store.data.size.height+40})
         let e = {};for(let k in node_option['edge'])e[k] = node_option['edge'][k]
         e.source = s_d.parent;
         e.target = t_node.id;
@@ -656,7 +837,7 @@ export default {
         this.graph.select(t_node)
         this.graph.addEdge(e);
         this.$message('添加子主题成功');
-        this.__tool_dagre_graph();
+        // this.__tool_dagre_graph();
     },
     __tool_add_sibling:function(){
         if(this.selected_node==null)return;
@@ -668,9 +849,10 @@ export default {
         }else {
           for(let k in node_option['others'])s_d[k] = node_option['others'][k]
         }
-        s_d.parent=this.selected_node.store.data.parent;
-        
+        s_d.parent=this.selected_node.getData().parent;
         let t_node = this.graph.addNode(s_d);
+        t_node.setData({parent:s_d.parent})
+        t_node.setProp("position",{x:this.selected_node.store.data.position.x + this.selected_node.store.data.size.width + 10,y: this.selected_node.store.data.position.y+parseInt(Math.random()*10)})
         let e = {};for(let k in node_option['edge'])e[k] = node_option['edge'][k]
         e.source = s_d.parent;
         e.target = t_node.id;
@@ -678,7 +860,7 @@ export default {
         this.graph.select(t_node)
         this.graph.addEdge(e);
         this.$message('添加主题成功');
-        this.__tool_dagre_graph();
+        // this.__tool_dagre_graph();
     },
     __tool_add_group:function(){
         const cells = this.graph.getSelectedCells();
@@ -722,12 +904,19 @@ export default {
               port:"input_port"
           }
       })
-      newdata.nodes = newdata.nodes.concat(data.ignore.nodes)
+      newdata.nodes = newdata.nodes.concat(data.ignore.nodes).concat(data.children.nodes)
       // console.log(newdata)
       this.graph.fromJSON(newdata);
       if (select_id!=0)this.graph.select(select_id)
     },
     __file_rename:function(){
+      if(this.online_file){
+        this.$message({
+            type: 'info',
+            message: '线上文件不支持修改名称'
+          });
+          return;
+      }
       this.$prompt('请输入文件名称', '提示', {
           confirmButtonText: '确定',
           cancelButtonText: '取消',
@@ -758,27 +947,20 @@ export default {
           return;
       }
       this.file_config.loading=true;
-        $.ajax({
-            url:"https://gitee.com/api/v5/repos/"+gitee_info.username+"/"+gitee_info.repos+"/git/trees/master",
-            type:"GET",
-            contentType:"application/json",
-            dataType:"json",
-            headers:{"Authorization":"token "+gitee_info.token},
-            success:(returen_data)=>{
-              let tree = returen_data.tree;
-              this.file_config.list.splice(0,this.file_config.list.length);
-              for(let i = 0; i < tree.length;i++){
-                let d = tree[i].path.split(".")
-                if(d[d.length-1]=="mb"){
-                  this.file_config.list.push(tree[i])
-                }
-              }
-            },
-            error:()=>{
-
-            }
-        });
+      gAPI.get_files().then(res=>{
+        let tree = res.data.tree;
+        this.file_config.list.splice(0,this.file_config.list.length);
+        for(let i = 0; i < tree.length;i++){
+          let d = tree[i].path.split(".")
+          if(d[d.length-1]=="mb"){
+            this.file_config.list.push(tree[i])
+          }
+        }
         this.file_config.loading=false;
+      }).catch(()=>{
+        this.file_config.loading=false;
+      })
+      
     },
     __load_gitee_file:function(name,sha){
       if(gitee_info.username == "" || gitee_info.repos == "" || gitee_info.token == "" ){
@@ -788,157 +970,112 @@ export default {
           });
           return;
       }
+      if(!this.can_request()){return;}
+      this.send_a_request();
       this.loading=true;
-      $.ajax({
-            url:"https://gitee.com/api/v5/repos/"+gitee_info.username+"/"+gitee_info.repos+"/git/blobs/"+sha,
-            type:"GET",
-            contentType:"application/json",
-            dataType:"json",
-            headers:{"Authorization":"token "+gitee_info.token},
-            success:(returen_data)=>{
-              this.graph.fromJSON(JSON.parse(this.__decode(returen_data.content)))
-              this.graph.centerContent();
-              this.file_name = name.split(".mb")[0];
-              this.tool_bar_list[this.tool_map['file']].title=this.file_name;
-              this.loading=false;
-            },
-            error:()=>{
-              this.loading=false;
-            }
-        })
+      gAPI.get_file_by_sha(sha).then(res=>{
+        this.graph.fromJSON(JSON.parse(this.__decode(res.data.content)))
+        this.graph.centerContent();
+        this.file_name = name.split(".mb")[0];
+        this.tool_bar_list[this.tool_map['file']].title=this.file_name;
+        this.loading=false;
+        this.online_file=true;
+      }).catch(()=>{
+        this.loading=false;
+      })
+      
     },
-    __upload_to_gitee:function(){
-        
-        if(gitee_info.username == "" || gitee_info.repos == "" || gitee_info.token == "" ){
+    __upload_gitee_file:async function(name,content){ 
+        return new Promise((resolve,reject)=>{
+          if(gitee_info.username == "" || gitee_info.repos == "" || gitee_info.token == "" ){
+              this.$notify({
+                  title: ' 失败',
+                  message: "Gitee 信息有误"
+              });
+              reject(false)
+              return false;
+          }
+          if(!this.can_request()){reject(false);return false;}
+          this.send_a_request();
+          gAPI.get_file_by_path(name).then(res=>{
+            if(res.data.length == 0){
+              const data = {
+                "content":content
+              }
+              gAPI.new_file(name,data).then(()=>{
+                this.$notify({
+                    title: '成功',
+                    message: name+" 上传成功！"
+                });
+                resolve(res.data)
+              }).catch((err)=>{
+                this.$notify({
+                    title: ' 失败',
+                    message: err.data.responseJSON.message
+                });
+                reject(err.data)
+              })
+            }
+            else{
+              this.$alert('是否替换'+name, '替换', {
+                confirmButtonText: '确定',
+                cancelButtonText: '取消',
+                type: 'warning'
+              }).then(() => {
+                const data ={
+                  "content":content,
+                  "sha":res.data.sha
+                }
+                gAPI.update_file(name,data).then(()=>{
+                  this.$notify({
+                      title: '成功',
+                      message: name+" 替换成功！"
+                  });
+                  resolve(res.data)
+                }).catch((err)=>{
+                  this.$notify({
+                    title: ' 失败',
+                    message: err.data.responseJSON.message
+                  });
+                  reject(err.data)
+                })
+              }).catch(()=>{
+                this.$notify({
+                  title: '取消替换',
+                  message: ''
+                });
+              })
+            }
+          }).catch(()=>{
             this.$notify({
                 title: ' 失败',
-                message: "Gitee 信息有误"
+                message: '请求出错'
             });
-            return;
-        }
-        this.loading=true;
-            $.ajax({
-                    url:"https://gitee.com/api/v5/repos/"+gitee_info.username+"/"+gitee_info.repos+"/contents/"+this.file_name+'.'+this.file_type,
-                    type:"GET",
-                    contentType:"application/json",
-                    dataType:"json",
-                    headers:{"Authorization":"token "+gitee_info.token},
-                    success:(returndata)=>{
-                        if(returndata.length == 0){
-                            // put a new pic to gitee repos
-                            $.ajax({
-                                url:"https://gitee.com/api/v5/repos/"+gitee_info.username+"/"+gitee_info.repos+"/contents/"+this.file_name+'.'+this.file_type,
-                                type:"POST",
-                                contentType:"application/json",
-                                dataType:"json",
-                                data:JSON.stringify({
-                                    "access_token":gitee_info.token,
-                                    "owner":gitee_info.username,
-                                    "repo":gitee_info.repos,
-                                    "path":this.file_name+'.'+this.file_type,
-                                    "message": "upload a pic named "+ this.file_name+'.'+this.file_type,
-                                    "content": this.__encode(JSON.stringify(this.graph.toJSON()))
-                                    }),
-                                headers:{"Authorization":"token "+gitee_info.token},
-                                success:()=>{
-                                    // console.log(returndata)
-                                    this.$notify({
-                                        title: '成功',
-                                        message: this.file_name+'.'+this.file_type+" 上传成功！"
-                                    });
-                                    this.loading=false;
-                                },
-                                error:function(returndata){
-                                    this.$notify({
-                                        title: ' 失败',
-                                        message: returndata.responseJSON.message
-                                    });
-                                    this.loading=false;
-                                }
-                                
-
-                            })
-                        }
-                        else{
-                            this.$alert('是否替换'+this.file_name+'.'+this.file_type, '替换', {
-                                confirmButtonText: '确定',
-                                cancelButtonText: '取消',
-                                type: 'warning'
-                                }).then(() => {
-                                    $.ajax({
-                                        url:"https://gitee.com/api/v5/repos/"+gitee_info.username+"/"+gitee_info.repos+"/contents/"+this.file_name+'.'+this.file_type,
-                                        type:"PUT",
-                                        contentType:"application/json",
-                                        dataType:"json",
-                                        data:JSON.stringify({
-                                            "access_token":gitee_info.token,
-                                            "owner":gitee_info.username,
-                                            "repo":gitee_info.repos,
-                                            "path":this.file_name+'.'+this.file_type,
-                                            "message": "upload a pic named "+ this.file_name+'.'+this.file_type,
-                                            "content": this.__encode(JSON.stringify(this.graph.toJSON())),
-                                            "sha":returndata.sha
-                                            }),
-                                        headers:{"Authorization":"token "+gitee_info.token},
-                                        success:()=>{
-                                            // console.log(returndata)
-                                            this.$notify({
-                                                title: '成功',
-                                                message: this.file_name+'.'+this.file_type+" 替换成功！"
-                                            });
-                                            this.loading=false;
-                                        },
-                                        error:(returndata)=>{
-                                            this.$notify({
-                                                title: ' 失败',
-                                                message: returndata.responseJSON.message
-                                            });
-                                            this.loading=false;
-                                        }
-                                    })
-                                }).catch(() => {
-                                    this.$notify({
-                                        title: '取消替换',
-                                        message: ''
-                                    });
-                                    this.loading=false;        
-                                    });
-                        }
-                        
-                        
-                    },
-                    error:()=>{
-                        $.ajax({
-                            url:"https://gitee.com/api/v5/repos/"+gitee_info.username+"/"+gitee_info.repos+"/contents/"+this.file_name+'.'+this.file_type,
-                            type:"PUT",
-                            contentType:"application/json",
-                            dataType:"json",
-                            data:JSON.stringify({
-                                "message": "upload a pic named "+ this.file_name+'.'+this.file_type,
-                                "content": this.__encode(JSON.stringify(this.graph.toJSON()))
-                                }),
-                            headers:{"Authorization":"token "+gitee_info.token},
-                            success:()=>{
-                                // console.log(returndata)
-                                this.$notify({
-                                    title: '成功',
-                                    message: this.file_name+'.'+this.file_type+" 上传成功！"
-                                });
-                                this.loading=false;
-                            },
-                            error:(returndata)=>{
-                                this.$notify({
-                                    title: ' 失败',
-                                    message: returndata.responseJSON.message
-                                });
-                                this.loading=false;
-                            }
-                            
-
-                        })
-                }
-
-            })
+          })
+        })
+        
+    },
+    __upload_to_gitee:function(){
+      const content = this.__encode(JSON.stringify(this.graph.toJSON()));
+      const name = this.file_name+'.'+this.file_type;
+      this.loading=true;
+      this.__upload_gitee_file(name,content).then(()=>{
+        this.loading=false;
+      }).catch(()=>{
+        this.loading=false;
+      })
+    },
+    push_a_pic:function(){
+      const content = this.pushed_pic_config.base64.substring(22)
+      const name = this.pushed_pic_config.name;
+      this.pushed_pic_config.loading=true;
+      this.__upload_gitee_file(name,content).then((res)=>{
+        this.pushed_pic_config.url = res.download_url;
+        this.pushed_pic_config.pushed = true;
+        this.pushed_pic_config.loading=false;
+      }).catch(()=>{
+        this.pushed_pic_config.loading=false;
+      })
     },
     __encode:function(str) {
         // first we use encodeURIComponent to get percent-encoded UTF-8,
@@ -1002,33 +1139,7 @@ export default {
   cursor:not-allowed;
   color:#aaa;
 }
-.node_config_board{
-  height: calc(100% - 60px);
-    width: 20%;
-    min-width: 200px;
-    position: fixed;
-    right: 0px;
-    top: 60px;
-    background: rgba(255,255,255,.75);
-    box-shadow: 0px 0px 10px rgba(0,0,0,.2);
-    backdrop-filter: blur(10px);
-        padding: 10px;
-    box-sizing: border-box;
-}
-.edge_config_board{
-  height: calc(100% - 60px);
-    width: 20%;
-    min-width: 200px;
-    position: fixed;
-    right: 0px;
-    top: 60px;
-    background: rgba(255,255,255,.75);
-    box-shadow: 0px 0px 10px rgba(0,0,0,.2);
-    backdrop-filter: blur(10px);
-        padding: 10px;
-    box-sizing: border-box;
-}
-.group_config_board{
+.config_board{
   height: calc(100% - 60px);
     width: 20%;
     min-width: 200px;
@@ -1058,6 +1169,10 @@ export default {
     box-shadow: 0 2px 12px 0 rgba(0,0,0,.1);
     transition:ease .5s;
     cursor: pointer;
+    display: flex;
+    justify-content: space-around;
+    height:20px;
+    line-height: 20px;
 }
 .btn:hover{
   box-shadow: 0 5px 12px -2px rgba(0,0,0,.3);
@@ -1117,5 +1232,12 @@ export default {
         line-height: 40px;
     margin: 5px;
   }
+}
+.pic_upload_board{
+  position: absolute;
+    top:70px;
+    width:400px;
+    right:20px;
+    z-index: 100;
 }
 </style>

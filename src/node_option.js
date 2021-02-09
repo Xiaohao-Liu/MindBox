@@ -6,10 +6,10 @@ module.exports={
         height: 60,
         attrs: {
             body: {
-            stroke: 'white',
-            fill: '#b39ddb',
-            rx: 20,
-            ry: 20,
+                stroke: 'white',
+                fill: '#b39ddb',
+                rx: 20,
+                ry: 20,
             },
             text:{
                 text:"中心主题",
@@ -122,4 +122,12 @@ module.exports={
         zIndex: 1,
         idx:4,
     },
+    "image":{
+        shape: 'image',
+        x:null,
+        y:null,
+        height:null,
+        width:null,
+        imageUrl:null,
+    }
 }

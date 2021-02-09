@@ -13,6 +13,13 @@
       "unicode_decimal": 59158
     },
     {
+      "icon_id": "3547511",
+      "name": "pic",
+      "font_class": "pic",
+      "unicode": "e604",
+      "unicode_decimal": 58884
+    },
+    {
       "icon_id": "4114027",
       "name": "create_child_node",
       "font_class": "create_child_node",
@@ -27,11 +34,25 @@
       "unicode_decimal": 59013
     },
     {
+      "icon_id": "5810273",
+      "name": "storage",
+      "font_class": "storage",
+      "unicode": "e806",
+      "unicode_decimal": 59398
+    },
+    {
       "icon_id": "6849978",
       "name": "refresh",
       "font_class": "refresh",
       "unicode": "e74a",
       "unicode_decimal": 59210
+    },
+    {
+      "icon_id": "7685170",
+      "name": "new",
+      "font_class": "new",
+      "unicode": "e710",
+      "unicode_decimal": 59152
     },
     {
       "icon_id": "7685330",
