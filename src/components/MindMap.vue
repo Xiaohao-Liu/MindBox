@@ -17,9 +17,9 @@
     <el-card v-show="pushed_pic_config.show" class="pic_upload_board" v-loading="pushed_pic_config.loadding">
         <img id="pushed_image" :src="pushed_pic_config.base64||pushed_pic_config.url" style="width:100%;"/>  
           <p v-show="pushed_pic_config.base64=='' && pushed_pic_config.url==''  && !pushed_pic_config.pushed" style="text-align:center;">NO IMAGE!</p>   
-          <el-input placeholder="照片名称" v-model="pushed_pic_config.name" v-show="!pushed_pic_config.pushed && pushed_pic_config.url.length==0">
+          <!-- <el-input placeholder="照片名称" v-model="pushed_pic_config.name" v-show="!pushed_pic_config.pushed && pushed_pic_config.url.length==0">
               <el-button slot="append" icon="el-icon-upload" v-on:click="push_a_pic"></el-button>
-          </el-input>
+          </el-input> -->
           <el-input placeholder="照片链接" v-model="pushed_pic_config.url" style="margin-top:10px;"></el-input>
           <div class="btn green" v-if="pushed_pic_config.url.length>0" v-on:click="__tool_add_pic_2">添加到画布</div>
     </el-card>
@@ -151,25 +151,31 @@
         <div slot="header" class="clearfix">
           <span>图片链接</span>
         </div>
+        <div class="preview_pic" v-on:click="image_config.fullscreen=true" style="cursor: zoom-in;">
+          <img id="pushed_image" :src="image_config.url" style="width:100%;"/>
+        </div>
         <el-input v-model="image_config.url" @change="__change_image_url" placeholder="请输入内容"></el-input>
       </el-card>
       <div class="btn" v-on:click="__del_image">Delete</div>
     </div>
     <div class="config_board file_config_board" v-if="file_config.show">
       <div class="board_title">{{file_config.title}}</div>
-      <div class="btn blue iconfont icon-refresh" v-on:click="this.__get_gitee_files"> Refresh</div>
+      <div class="btn blue iconfont icon-refresh" v-on:click="this.__get_gitee_files"></div>
       <div class="file_item iconfont icon-file" v-for="item in file_config.list" :key="item.path">
         <div  style="width:calc(100% - 30px);float:right;white-space: nowrap;overflow: hidden;text-overflow: ellipsis;"  v-on:click="__load_gitee_file(item.path,item.sha)">
           {{item.path}}
         </div>
       </div>
     </div>
+    <div v-if="image_config.fullscreen" class="fullscreen_image" v-on:click="image_config.fullscreen=false" :style="{backgroundImage:'url('+image_config.url+')'}">
+      <!-- <img :src="image_config.url" style="width:calc(100% - 20px);"/> -->
+    </div>
   </el-container>
 </template>
 
 <script>
 // const $ = require("jquery");
-import { Graph } from '@antv/x6';
+import { Graph, DataUri} from '@antv/x6';
 import { Layout } from '@antv/layout';
 const dagreLayout = new Layout({
   type: 'dagre',
@@ -265,8 +271,9 @@ export default {
       online_file:false,
       selected_node:null,
       selected_edge:null,
-      predefineColors:["#b39ddb","#f44336","#009688","#0d47a1"],
+      predefineColors:["#eeeeee","#ffffff","#000000","#b39ddb","#f44336","#009688","#0d47a1"],
       request_lock:false,
+      zoom:0,
       tool_bar_list:[
         {
           name:"Arron Liu",
@@ -339,6 +346,36 @@ export default {
           click:()=>{this.__tool_add_group()},
         },
         {
+          name:"放大",
+          width:40,
+          style:"",
+          enable:true,
+          show:true,
+          icon:"iconfont icon-zoomin",
+          title:"",
+          click:()=>{this.zoom+=0.2;this.graph.zoom(0.2);},
+        },
+        {
+          name:"复原",
+          width:40,
+          style:"",
+          enable:true,
+          show:true,
+          icon:"iconfont icon-zoom",
+          title:"",
+          click:()=>{this.graph.zoom(-this.zoom);this.zoom=0;},
+        },
+        {
+          name:"缩小",
+          width:40,
+          style:"",
+          enable:true,
+          show:true,
+          icon:"iconfont icon-zoomout",
+          title:"",
+          click:()=>{this.zoom-=0.2;this.graph.zoom(-0.2);},
+        },
+        {
           name:"排布",
           width:40,
           style:"",
@@ -377,6 +414,30 @@ export default {
           icon:"iconfont icon-upload",
           title:"",
           click:()=>{this.__upload_to_gitee()},
+        },
+        {
+          name:"PNG",
+          width:40,
+          style:"",
+          enable:true,
+          show:true,
+          icon:"iconfont icon-PNG",
+          title:"",
+          click:()=>{this.graph.toPNG((dataUri) => {
+            DataUri.downloadDataUri(dataUri, this.file_name+'.png')
+          },{padding: {top: 30,right: 20,bottom: 30,left: 20,}})},
+        },
+        {
+          name:"SVG",
+          width:40,
+          style:"",
+          enable:true,
+          show:true,
+          icon:"iconfont icon-SVG",
+          title:"",
+          click:()=>{this.graph.toSVG((dataUri) => {
+            DataUri.downloadDataUri(DataUri.svgToDataUrl(dataUri), this.file_name+'.svg')
+          },{serializeImages:true,viewBox:"0"})},
         },
       ],
       tool_map:{
@@ -421,6 +482,7 @@ export default {
         show:false,
         title:'编辑图片',
         url:"",
+        fullscreen:false,
       },
       file_config:{
         show:false,
@@ -689,6 +751,7 @@ export default {
           this.group_config.show=false;
           this.file_config.show=false;
           this.image_config.show = false;
+          this.pushed_pic_config.show = false;
       });
       this.__add_paste_event()
     },
@@ -754,6 +817,7 @@ export default {
             name= name+"_1.png"
             reader.onload = (event)=>{
                 this.pushed_pic_config.base64 = event.target.result;
+                this.pushed_pic_config.url = this.pushed_pic_config.base64;
                 this.pushed_pic_config.name = name;
                 this.pushed_pic_config.pushed = false;
             }
@@ -766,6 +830,7 @@ export default {
       if(this.selected_node==null || this.selected_node.store.data.idx == 0)return;
       this.graph.removeNode(this.selected_node.id);
       this.node_config.show = false;
+      this.image_config.show = false;
       this.$message('删除成功');
     },
     __del_group:function(){
@@ -1099,7 +1164,7 @@ export default {
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style lang="scss" rel="stylesheet/scss" scoped>
 .main{
-  position:absolute;
+  position:fixed;
   top:0px;
   left: 0px;
   height:100%;
@@ -1141,7 +1206,7 @@ export default {
 }
 .config_board{
   height: calc(100% - 60px);
-    width: 20%;
+    width: 30%;
     min-width: 200px;
     position: fixed;
     right: 0px;
@@ -1185,7 +1250,7 @@ export default {
 }
 .file_config_board{
   height: calc(100% - 60px);
-    width: 20%;
+    width: 30%;
     min-width: 200px;
     position: fixed;
     left: 0px;
@@ -1239,5 +1304,20 @@ export default {
     width:400px;
     right:20px;
     z-index: 100;
+}
+
+.fullscreen_image{
+  position: fixed;
+  z-index: 10;
+  top:0px;
+  left:0px;
+  height: 100vh;
+  width: 100vw;
+  background: rgba(0,0,0,.5);
+  backdrop-filter: blur(5px);
+      background-position: center;
+    background-repeat: no-repeat;
+    background-size: contain;
+    cursor: zoom-out;
 }
 </style>
