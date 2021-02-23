@@ -1,5 +1,5 @@
 <template>
-  <el-container class="main" v-loading="loading">
+  <el-container :class="'main'+(darkmode?' dark_mode':'')" v-loading="loading">
     <el-header>
       <div 
       :class="'header_item '+(item.enable?'enable':'disable')" 
@@ -105,6 +105,9 @@
       </el-row>
         
         <div v-if="selected_node.store.data.idx!=0" class="btn" v-on:click="__del_node">Delete</div>
+        
+    </div>
+    <div class="md_node_note"  v-if="node_config.show&&node_config.note!=''"  v-html="markdown.render(node_config.note)">
     </div>
     <div class="config_board edge_config_board" v-if="edge_config.show">
       <div class="board_title">{{edge_config.title}}</div>
@@ -177,6 +180,7 @@
 // const $ = require("jquery");
 import { Graph, DataUri} from '@antv/x6';
 import { Layout } from '@antv/layout';
+const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 const dagreLayout = new Layout({
   type: 'dagre',
   // ranksep: 20,
@@ -195,7 +199,7 @@ Graph.registerEdge(
     inherit: 'edge',
     attrs: {
       line: {
-        stroke: '#333',
+        stroke: systemDark?'#fff':"#333",
       },
     },
     connector: { name: 'rounded' },
@@ -256,6 +260,13 @@ import {GiteeAPI} from "../api";
 const gAPI = new GiteeAPI(gitee_info);
 import "../assets/iconfont/iconfont.css"
 
+import markdownIt from 'markdown-it'
+import markdownItLatex from 'markdown-it-latex'
+import 'markdown-it-latex/dist/index.css';
+import '../assets/github-markdown.min.css';
+const md = markdownIt()
+md.use(require('markdown-it-highlightjs'),{ inline: true })
+md.use(markdownItLatex)
 export default {
   name: 'HelloWorld',
   props: {
@@ -263,6 +274,8 @@ export default {
   },
   data:function(){
     return {
+      markdown:md,
+      darkmode:systemDark,
       loading:false,
       first_load:true,
       gitee_enable:gitee_info.enable,
@@ -278,7 +291,7 @@ export default {
         {
           name:"Arron Liu",
           width:100,
-          style:"margin-right: 20px;border-right: 1px solid #eee;padding-right: 20px;",
+          style:"margin-right: 20px;padding-right: 20px;",
           enable:true,
           show:true,
           icon:"",
@@ -288,7 +301,7 @@ export default {
         {
           name:"文件名",
           width:200,
-          style:"margin-right: 20px;border-right: 1px solid #eee;padding-right: 20px;",
+          style:"margin-right: 20px;padding-right: 20px;",
           enable:true,
           show:true,
           icon:"",
@@ -545,7 +558,7 @@ export default {
         },
         panning:true,
         background:{
-          color:"#efefef"
+          // color:"#efefef"
         }
       }
       this.graph = new Graph(default_graph_option);
@@ -574,14 +587,19 @@ export default {
     },
     __init_a_blank_project:function(){
       this.graph.fromJSON({})
-      let center_node_op = node_option['first'];
-      this.graph.addNode(center_node_op)
+      // let center_node_class = new node_option['first'].class();
+      let center_node_op = node_option["first"];
+      // center_node_op.html = center_node_class.node();
+      // center_node_op.data.obj = center_node_class;
+      console.log(center_node_op)
+      console.log(this.graph.addNode(center_node_op))
       this.graph.centerContent();
       this.tool_bar_list[this.tool_map['file']].title=this.file_name;
       this.file_name = "untitled";
       this.tool_bar_list[this.tool_map['file']].title=this.file_name;
       this.first_load=false;
       this.online_file=false;
+      document.getElementsByTagName('title')[0].innerText = "new file";
     },
     __extract_graph_json:function(){
         const data={nodes:[],edges:[]};
@@ -1045,6 +1063,7 @@ export default {
         this.tool_bar_list[this.tool_map['file']].title=this.file_name;
         this.loading=false;
         this.online_file=true;
+        document.getElementsByTagName('title')[0].innerText = this.file_name;
       }).catch(()=>{
         this.loading=false;
       })
@@ -1185,6 +1204,9 @@ export default {
     box-shadow: 0px 2px 10px -2px rgba(0,0,0,.2);
     transition: ease .5s;
     margin: 5px;
+    padding: 0px 5px;
+    box-sizing: border-box;
+    white-space: nowrap;overflow: hidden;text-overflow: ellipsis;
   }
   .header_name{
     height:15px;
@@ -1213,8 +1235,9 @@ export default {
     top: 60px;
     background: rgba(255,255,255,.75);
     box-shadow: 0px 0px 10px rgba(0,0,0,.2);
-    backdrop-filter: blur(10px);
-        padding: 10px;
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    backdrop-filter: saturate(180%) blur(20px);
+    padding: 10px;
     box-sizing: border-box;
 }
 .board_title{
@@ -1223,6 +1246,7 @@ export default {
     padding: 10px;
     border-bottom: 1px solid #ddd;
     text-align: left;
+    margin-bottom: 10px;
 }
 .btn{
     background: #f44336;
@@ -1257,7 +1281,8 @@ export default {
     top: 60px;
     background: rgba(255,255,255,.75);
     box-shadow: 0px 0px 10px rgba(0,0,0,.2);
-    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    backdrop-filter: saturate(180%) blur(20px);
         padding: 10px;
     box-sizing: border-box;
     .file_item{
@@ -1278,8 +1303,9 @@ export default {
     width: 100%;
     top: 0px;
     left: 0px;
-    background: rgba(0,0,0,.7);
-    backdrop-filter: blur(2px);
+    background: transparent;
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    backdrop-filter: saturate(180%) blur(20px);
     .first_load_board{
       padding: 20px 10px;
     position: fixed;
@@ -1314,10 +1340,98 @@ export default {
   height: 100vh;
   width: 100vw;
   background: rgba(0,0,0,.5);
-  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+    backdrop-filter: saturate(180%) blur(20px);
       background-position: center;
     background-repeat: no-repeat;
     background-size: contain;
     cursor: zoom-out;
+}
+.md_node_note{
+      position: absolute;
+        max-height: calc(80% - 60px);
+    max-width: 30%;
+    top: calc(10% + 60px);
+    left: 10px;
+    box-shadow: 10px 10px 20px -5px  rgba(0,0,0,.1);
+    background: white;
+    border-radius: 10px;
+    text-align: justify;
+    padding: 20px 20px;
+    box-sizing: border-box;
+    // text-indent: 20px;
+    word-wrap: break-word;
+    word-break: normal;
+    border:2px solid white;
+    overflow: auto;
+}
+.dark_mode{
+  background:#333;
+  .header_btn{
+    background: #444;
+    color:white;
+    border: 1px solid #666;
+  }
+  .header_name{
+    color: white;
+  }
+  .header_item.disable{
+    .header_btn{
+      border: 1px solid #444;
+      color:#666;
+    }
+    .header_name{
+      color: #666;
+    }
+  }
+  #antv_container{
+    background: #222 !important;
+  }
+  .config_board{
+    background:rgba(0,0,0,.75);
+    color:white;
+    .el-input{
+      ::v-deep input{
+        background: #666;
+        border: 1px solid #444;
+        color: white;
+      }
+    }
+    .el-textarea{
+      ::v-deep textarea{
+        background: #666;
+        border: 1px solid #444;
+        color: white;
+      }
+    }
+    .board_title{
+      color:white;
+      border-bottom: 1px solid #444;
+    }
+    .el-card{
+      border:1px solid #444;
+      ::v-deep .el-card__header{
+        background: #333;
+        border-bottom: 1px solid #444;
+        color:white;
+      }
+      ::v-deep .el-card__body{
+        background: #333;
+        color:white;
+      }
+    }
+  }
+  .file_config_board .file_item{
+    background: #333;
+    border:1px solid #444;
+  }
+  .md_node_note{
+        background: #333;
+    color: white;
+    border-color: #333;
+  }
+  svg g path{
+    stroke:white !important;
+  }
 }
 </style>
