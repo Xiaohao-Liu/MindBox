@@ -179,20 +179,20 @@
 <script>
 // const $ = require("jquery");
 import { Graph, DataUri} from '@antv/x6';
-import { Layout } from '@antv/layout';
+// import { Layout } from '@antv/layout';
 const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-const dagreLayout = new Layout({
-  type: 'dagre',
-  // ranksep: 20,
-  // nodesep: 30,
-  controlPoints: true,
-  nodesepFunc:(opt)=>{
-    return parseInt(opt.width/2);
-  },
-  ranksepFunc:(opt)=>{
-    return parseInt(opt.height/2);
-  },
-})
+// const dagreLayout = new Layout({
+//   type: 'dagre',
+//   // ranksep: 20,
+//   // nodesep: 30,
+//   controlPoints: true,
+//   nodesepFunc:(opt)=>{
+//     return parseInt(opt.width/2);
+//   },
+//   ranksepFunc:(opt)=>{
+//     return parseInt(opt.height/2);
+//   },
+// })
 Graph.registerEdge(
   'edge',
   {
@@ -280,6 +280,7 @@ export default {
       first_load:true,
       gitee_enable:gitee_info.enable,
       file_name:"untitled",
+      file_sha:"null",
       file_type:"mb",
       online_file:false,
       selected_node:null,
@@ -388,16 +389,16 @@ export default {
           title:"",
           click:()=>{this.zoom-=0.2;this.graph.zoom(-0.2);},
         },
-        {
-          name:"排布",
-          width:40,
-          style:"",
-          enable:true,
-          show:false,
-          icon:"iconfont icon-tree",
-          title:"",
-          click:()=>{this.__tool_dagre_graph()},
-        },
+        // {
+        //   name:"排布",
+        //   width:40,
+        //   style:"",
+        //   enable:true,
+        //   show:false,
+        //   icon:"iconfont icon-tree",
+        //   title:"",
+        //   click:()=>{this.__tool_dagre_graph()},
+        // },
         {
           name:"注释",
           width:40,
@@ -970,35 +971,36 @@ export default {
         }
         return false;
     },
-    __tool_dagre_graph:function(){
-      var data= this.__extract_graph_json();
-      let select_id = 0;
-      if (this.selected_node!=null)select_id=this.selected_node.id;
-      this.graph.cleanSelection();
-      const newdata = dagreLayout.layout(data.data)
-      // reconstruct edges
-      newdata.edges.forEach(rel=>{
-          rel.source={
-              cell:rel.source,
-              port:"output_port"
-          }
-          rel.target={
-              cell:rel.target,
-              port:"input_port"
-          }
-      })
-      newdata.nodes = newdata.nodes.concat(data.ignore.nodes).concat(data.children.nodes)
-      // console.log(newdata)
-      this.graph.fromJSON(newdata);
-      if (select_id!=0)this.graph.select(select_id)
-    },
+    // __tool_dagre_graph:function(){
+    //   var data= this.__extract_graph_json();
+    //   let select_id = 0;
+    //   if (this.selected_node!=null)select_id=this.selected_node.id;
+    //   this.graph.cleanSelection();
+    //   const newdata = dagreLayout.layout(data.data)
+    //   // reconstruct edges
+    //   newdata.edges.forEach(rel=>{
+    //       rel.source={
+    //           cell:rel.source,
+    //           port:"output_port"
+    //       }
+    //       rel.target={
+    //           cell:rel.target,
+    //           port:"input_port"
+    //       }
+    //   })
+    //   newdata.nodes = newdata.nodes.concat(data.ignore.nodes).concat(data.children.nodes)
+    //   // console.log(newdata)
+    //   this.graph.fromJSON(newdata);
+    //   if (select_id!=0)this.graph.select(select_id)
+    // },
     __file_rename:function(){
       if(this.online_file){
-        this.$message({
-            type: 'info',
-            message: '线上文件不支持修改名称'
-          });
-          return;
+        const file_link = "http://wykxldz.gitee.io/mindbox/?u="+gitee_info.username+"&r="+gitee_info.repos+"&s="+this.file_sha+"&n="+this.file_name+".mb"
+        this.$alert('', '分享阅读链接', {
+          showInput:true,
+          inputValue:file_link
+        });
+        return;
       }
       this.$prompt('请输入文件名称', '提示', {
           confirmButtonText: '确定',
@@ -1060,6 +1062,7 @@ export default {
         this.graph.fromJSON(JSON.parse(this.__decode(res.data.content)))
         this.graph.centerContent();
         this.file_name = name.split(".mb")[0];
+        this.file_sha = sha;
         this.tool_bar_list[this.tool_map['file']].title=this.file_name;
         this.loading=false;
         this.online_file=true;
