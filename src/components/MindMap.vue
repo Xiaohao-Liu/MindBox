@@ -40,10 +40,11 @@
       </el-card>
       <el-card style="margin-top:10px;">
         <div slot="header" class="clearfix">
-          <span>备注</span>
+          <span>备注 <el-button style="background:transparent;border:0px;" plain icon="el-icon-edit" @click="markdown_mode=true"></el-button></span>
         </div>
         <el-input
           type="textarea"
+          :class="(markdown_mode?'markdown_mode':'')"
           :autosize="{ minRows: 2, maxRows: 4}"
           placeholder="请输入内容"
           v-model="node_config.note"
@@ -107,7 +108,7 @@
         <div v-if="selected_node.store.data.idx!=0" class="btn" v-on:click="__del_node">Delete</div>
         
     </div>
-    <div class="md_node_note"  v-if="node_config.show&&node_config.note!=''"  v-html="markdown.render(node_config.note)">
+    <div class="md_node_note"  :class="'md_node_note'+(markdown_mode?' markdown_mode':'')"  v-if="node_config.show&&node_config.note!=''"  v-html="markdown.render(node_config.note)">
     </div>
     <div class="config_board edge_config_board" v-if="edge_config.show">
       <div class="board_title">{{edge_config.title}}</div>
@@ -504,7 +505,8 @@ export default {
         label:"",
         loading:false,
         list:[]
-      }
+      },
+      markdown_mode:false
     }
   },
   mounted:function(){
@@ -771,6 +773,7 @@ export default {
           this.file_config.show=false;
           this.image_config.show = false;
           this.pushed_pic_config.show = false;
+          this.markdown_mode=false;
       });
       this.__add_paste_event()
     },
@@ -1368,6 +1371,26 @@ export default {
     border:2px solid white;
     overflow: auto;
 }
+
+.md_node_note.markdown_mode{
+      width: calc(35% - 20px);
+    max-width: calc(35% - 20px);
+    top: 70px;
+    height: calc(100% - 80px);
+    max-height: calc(100% - 80px);
+    overflow: scroll;
+}
+.el-textarea.markdown_mode{
+      position: fixed;
+    top: 10px;
+    right: calc(100% + 10px);
+    width: 100%;
+    height: calc(100% - 20px);
+    ::v-deep .el-textarea__inner{
+      height: 100% !important;
+      overflow: scroll;
+    }
+}
 .dark_mode{
   background:#333;
   .header_btn{
@@ -1436,5 +1459,52 @@ export default {
   svg g path{
     stroke:white !important;
   }
+}
+</style>
+<style lang="scss" rel="stylesheet/scss">
+.md_node_note{
+thead th{
+    background: transparent !important;
+    color: black !important;
+    font-weight: bold;
+    border: 0px !important;
+    /* border-top: 1px solid black; */
+    border-bottom: 1px solid black !important;
+    padding: 5px 20px;
+    margin-bottom: 5px;
+}
+tbody td{
+    background: transparent !important;
+    color: black !important;
+    border: 0px !important;
+    border-top: 1px solid black !important;
+    /* border-bottom: 1px solid black; */
+    padding: 5px 20px;
+    margin-bottom: 5px;
+}
+thead th:nth-child(1){
+    border-right:1px solid black !important;
+}
+tbody td:nth-child(1){
+    border-right:1px solid black !important;
+}
+}
+.dark_mode{
+  .md_node_note{
+thead th{
+    color: white !important;
+    border-bottom: 1px solid white !important;
+}
+tbody td{
+    color: white !important;
+    border-top: 1px solid white !important;
+}
+thead th:nth-child(1){
+    border-right:1px solid white !important;
+}
+tbody td:nth-child(1){
+    border-right:1px solid white !important;
+}
+}
 }
 </style>
