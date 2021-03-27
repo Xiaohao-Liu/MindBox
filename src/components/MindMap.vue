@@ -25,12 +25,17 @@
     </el-card>
     <div class="first_load_cover" v-if="first_load">
       <div class="first_load_board">
-      Choose a Operation:
-      <div class="btn green iconfont icon-new" v-on:click="__init_a_blank_project"> Create</div>
-      <div class="btn green iconfont icon-storage" v-on:click="__init_an_online_project" v-if="gitee_enable"> Open</div>
+        <div v-if="read_mode">
+          {{cover_msg}}
+        </div>
+        <div v-else>
+          Choose a Operation:
+          <div class="btn green iconfont icon-new" v-on:click="__init_a_blank_project"> Create</div>
+          <div class="btn green iconfont icon-storage" v-on:click="__init_an_online_project" v-if="gitee_enable"> Open</div>
+        </div>
+      </div>
     </div>
-    </div>
-    <div class="config_board node_config_board" v-if="node_config.show">
+    <div class="config_board node_config_board" v-if="!read_mode&&node_config.show">
       <div class="board_title">{{node_config.title}}</div>
       <el-card>
         <div slot="header" class="clearfix">
@@ -108,9 +113,16 @@
         <div v-if="selected_node.store.data.idx!=0" class="btn" v-on:click="__del_node">Delete</div>
         
     </div>
-    <div class="md_node_note"  :class="'md_node_note'+(markdown_mode?' markdown_mode':'')"  v-if="node_config.show&&node_config.note!=''"  v-html="markdown.render(node_config.note)">
+    <div id="node_note" :class="'md_node_note'+(markdown_mode?' markdown_mode':'')"  v-if="node_config.show&&node_config.note!=''">
+    <div class="btn green el-icon-tickets" @click="node_note_raw_text=!node_note_raw_text">{{node_note_raw_text?'Markdown':'Raw Text'}}</div>
+    <textarea style="width: 30vw;border: 0px;height: 50vh;border-radius: 5px;padding: 5px;" v-if="node_note_raw_text" :value="node_config.note"></textarea>
+    <div v-else v-html="markdown.render(node_config.note)"></div>
+    
     </div>
-    <div class="config_board edge_config_board" v-if="edge_config.show">
+    
+    <img id="pushed_image"  class="preview_pic_note"  v-if="image_config.show&&image_config.url!=''" v-on:click="image_config.fullscreen=true" style="cursor: zoom-in;" :src="image_config.url"/>
+    
+    <div class="config_board edge_config_board" v-if="!read_mode&&edge_config.show">
       <div class="board_title">{{edge_config.title}}</div>
       <el-card>
         <div slot="header" class="clearfix">
@@ -120,7 +132,7 @@
       </el-card>
       <div class="btn" v-on:click="__del_edge">Delete</div>
     </div>
-    <div class="config_board group_config_board" v-if="group_config.show">
+    <div class="config_board group_config_board" v-if="!read_mode&&group_config.show">
       <div class="board_title">{{group_config.title}}</div>
       <div class="color_selector_board">
         <div class="color_selector">
@@ -149,51 +161,34 @@
       </div>
       <div class="btn" v-on:click="__del_group">Delete</div>
     </div>
-    <div class="config_board image_config_board" v-if="image_config.show">
+    <div class="config_board image_config_board" v-if="!read_mode&&image_config.show">
       <div class="board_title">{{image_config.title}}</div>
       <el-card>
         <div slot="header" class="clearfix">
           <span>图片链接</span>
         </div>
-        <div class="preview_pic" v-on:click="image_config.fullscreen=true" style="cursor: zoom-in;">
-          <img id="pushed_image" :src="image_config.url" style="width:100%;"/>
-        </div>
         <el-input v-model="image_config.url" @change="__change_image_url" placeholder="请输入内容"></el-input>
       </el-card>
       <div class="btn" v-on:click="__del_image">Delete</div>
     </div>
-    <div class="config_board file_config_board" v-if="file_config.show">
+    <div class="config_board file_config_board" v-if="!read_mode&&file_config.show">
       <div class="board_title">{{file_config.title}}</div>
       <div class="btn blue iconfont icon-refresh" v-on:click="this.__get_gitee_files"></div>
       <div class="file_item iconfont icon-file" v-for="item in file_config.list" :key="item.path">
-        <div  style="width:calc(100% - 30px);float:right;white-space: nowrap;overflow: hidden;text-overflow: ellipsis;"  v-on:click="__load_gitee_file(item.path,item.sha)">
+        <div  style="width:calc(100% - 30px);float:right;white-space: nowrap;overflow: hidden;text-overflow: ellipsis;"  v-on:click="__load_gitee_file(item.path,item.sha);file_config.show=false;">
           {{item.path}}
         </div>
       </div>
     </div>
     <div v-if="image_config.fullscreen" class="fullscreen_image" v-on:click="image_config.fullscreen=false" :style="{backgroundImage:'url('+image_config.url+')'}">
-      <!-- <img :src="image_config.url" style="width:calc(100% - 20px);"/> -->
     </div>
   </el-container>
 </template>
 
 <script>
-// const $ = require("jquery");
 import { Graph, DataUri} from '@antv/x6';
-// import { Layout } from '@antv/layout';
 const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-// const dagreLayout = new Layout({
-//   type: 'dagre',
-//   // ranksep: 20,
-//   // nodesep: 30,
-//   controlPoints: true,
-//   nodesepFunc:(opt)=>{
-//     return parseInt(opt.width/2);
-//   },
-//   ranksepFunc:(opt)=>{
-//     return parseInt(opt.height/2);
-//   },
-// })
+
 Graph.registerEdge(
   'edge',
   {
@@ -258,7 +253,6 @@ Graph.registerEdge(
 import node_option from '../node_option';
 import gitee_info from '../index';
 import {GiteeAPI} from "../api";
-const gAPI = new GiteeAPI(gitee_info);
 import "../assets/iconfont/iconfont.css"
 
 import markdownIt from 'markdown-it'
@@ -275,7 +269,11 @@ export default {
   },
   data:function(){
     return {
+      gitee_info:gitee_info,
+      read_mode:false,
+      cover_msg:"加载中...",
       markdown:md,
+      node_note_raw_text:false,
       darkmode:systemDark,
       loading:false,
       first_load:true,
@@ -463,6 +461,7 @@ export default {
         "sibling":5,
         "group":6,
       },
+      read_mode_bar:new Set([0,1,7,8,9]),
       pushed_pic_config:{
         show:false,
         name:"",
@@ -510,39 +509,88 @@ export default {
     }
   },
   mounted:function(){
-    
+    this.__init_read_mode();
     this.__init_graph();
     
     this.__add_events();
     this.__add_keyboard_events();
+    if(this.read_mode){this.__load_online_file()}
   },
   methods:{ 
     index:function(){
-      if(gitee_info.enable){
+      if(!this.read_mode&&this.gitee_info.enable){
         this.file_config.show = !this.file_config.show;
         if(this.file_config.show==true){
           if(this.can_request()){this.__get_gitee_files();this.send_a_request()}
         }
       }
-      else{alert("MindMap\nDesined by Arron Liu.")}
+      else{
+        alert("MindMap\nDesined by Arron Liu.");
+        }
+    },
+    __init_read_mode:function(){
+      if(!this.gitee_info.enable)this.read_mode=true;
+      if(!this.read_mode){this.gAPI = new GiteeAPI(this.gitee_info);return;}
+      const location_parames = {}
+      window.location.search.substring(1).split("&").forEach(ele=>{
+        let i = ele.split("=");
+        location_parames[i[0]] = i[1]
+      })
+      try{
+        this.gitee_info={
+          enable:true,
+          username:location_parames['u'],
+          repos: location_parames['r'],
+          token:"",
+        }
+        this.file_sha = location_parames['s']
+        this.file_name = location_parames['n'].split(".mb")[0]
+      }catch{
+        this.cover_msg="参数错误！"
+        return;
+      }
+      this.gAPI = new GiteeAPI(this.gitee_info);
+      this.tool_bar_list.forEach((ele,idx)=>{
+        if(this.read_mode_bar.has(idx))return;
+        ele.show=false;
+      })
+    },
+    __load_online_file:function(){
+      if(!this.can_request()){return;}
+      this.send_a_request();
+      this.loading=true;
+      this.gAPI.get_file_by_sha(this.file_sha).then(res=>{
+        this.graph.fromJSON(JSON.parse(this.__decode(res.data.content)))
+        this.graph.centerContent();
+        this.tool_bar_list[this.tool_map['file']].title=this.file_name;
+        this.loading=false;
+        this.online_file=true;
+        this.first_load=false;
+        document.getElementsByTagName('title')[0].innerText = this.file_name;
+      }).catch((err)=>{
+        this.cover_msg="Wrong\n" + err
+        // console.log("wrong:", err)
+        this.loading=false;
+      })
+      
     },
     __init_graph:function(){
         const default_graph_option={
         container: document.getElementById('antv_container'),
-        history:true,
+        history:this.read_mode?false:true,
         clipboard: {
-          enabled: true,
-          useLocalStorage: true,
+          enabled: this.read_mode?false:true,
+          useLocalStorage: this.read_mode?false:true,
         },
         grid: {
           size: 10,      // 网格大小 10px
           visible: true, // 渲染网格背景
         },
         resizing: {
-          enabled: true,
+          enabled: this.read_mode?false:true,
         },
         keyboard: {
-          enabled: true,
+          enabled: this.read_mode?false:true,
           format(key) { 
             return key
             .replace(/\s/g, '')
@@ -558,6 +606,11 @@ export default {
         },
         connecting: {
           allowBlank: false,
+          allowNode: this.read_mode?false:true,
+          allowMulti: this.read_mode?false:true,
+          allowLoop: this.read_mode?false:true,
+          allowEdge: false,
+          allowPort: false
         },
         panning:true,
         background:{
@@ -998,7 +1051,7 @@ export default {
     // },
     __file_rename:function(){
       if(this.online_file){
-        const file_link = "http://wykxldz.gitee.io/mindbox/?u="+gitee_info.username+"&r="+gitee_info.repos+"&s="+this.file_sha+"&n="+this.file_name+".mb"
+        const file_link = "http://wykxldz.gitee.io/mindbox/?u="+this.gitee_info.username+"&r="+this.gitee_info.repos+"&s="+this.file_sha+"&n="+this.file_name+".mb"
         this.$alert('', '分享阅读链接', {
           showInput:true,
           inputValue:file_link
@@ -1027,7 +1080,7 @@ export default {
       
     },
     __get_gitee_files:function(){
-      if(gitee_info.username == "" || gitee_info.repos == "" || gitee_info.token == "" ){
+      if(this.gitee_info.username == "" || this.gitee_info.repos == "" || this.gitee_info.token == "" ){
           this.$notify({
               title: ' 失败',
               message: "Gitee 信息有误"
@@ -1035,7 +1088,7 @@ export default {
           return;
       }
       this.file_config.loading=true;
-      gAPI.get_files().then(res=>{
+      this.gAPI.get_files().then(res=>{
         let tree = res.data.tree;
         this.file_config.list.splice(0,this.file_config.list.length);
         for(let i = 0; i < tree.length;i++){
@@ -1051,7 +1104,7 @@ export default {
       
     },
     __load_gitee_file:function(name,sha){
-      if(gitee_info.username == "" || gitee_info.repos == "" || gitee_info.token == "" ){
+      if(this.gitee_info.username == "" || this.gitee_info.repos == "" || this.gitee_info.token == "" ){
           this.$notify({
               title: ' 失败',
               message: "Gitee 信息有误"
@@ -1061,7 +1114,7 @@ export default {
       if(!this.can_request()){return;}
       this.send_a_request();
       this.loading=true;
-      gAPI.get_file_by_sha(sha).then(res=>{
+      this.gAPI.get_file_by_sha(sha).then(res=>{
         this.graph.fromJSON(JSON.parse(this.__decode(res.data.content)))
         this.graph.centerContent();
         this.file_name = name.split(".mb")[0];
@@ -1077,7 +1130,7 @@ export default {
     },
     __upload_gitee_file:async function(name,content){ 
         return new Promise((resolve,reject)=>{
-          if(gitee_info.username == "" || gitee_info.repos == "" || gitee_info.token == "" ){
+          if(this.gitee_info.username == "" || this.gitee_info.repos == "" || this.gitee_info.token == "" ){
               this.$notify({
                   title: ' 失败',
                   message: "Gitee 信息有误"
@@ -1087,12 +1140,12 @@ export default {
           }
           if(!this.can_request()){reject(false);return false;}
           this.send_a_request();
-          gAPI.get_file_by_path(name).then(res=>{
+          this.gAPI.get_file_by_path(name).then(res=>{
             if(res.data.length == 0){
               const data = {
                 "content":content
               }
-              gAPI.new_file(name,data).then(()=>{
+              this.gAPI.new_file(name,data).then(()=>{
                 this.$notify({
                     title: '成功',
                     message: name+" 上传成功！"
@@ -1116,7 +1169,7 @@ export default {
                   "content":content,
                   "sha":res.data.sha
                 }
-                gAPI.update_file(name,data).then(()=>{
+                this.gAPI.update_file(name,data).then(()=>{
                   this.$notify({
                       title: '成功',
                       message: name+" 替换成功！"
@@ -1233,18 +1286,19 @@ export default {
   color:#aaa;
 }
 .config_board{
-  height: calc(100% - 60px);
+  height: 100%;
     width: 30%;
     min-width: 200px;
     position: fixed;
     right: 0px;
-    top: 60px;
+    top: 0px;
     background: rgba(255,255,255,.75);
     box-shadow: 0px 0px 10px rgba(0,0,0,.2);
     -webkit-backdrop-filter: saturate(180%) blur(20px);
     backdrop-filter: saturate(180%) blur(20px);
     padding: 10px;
     box-sizing: border-box;
+    overflow: auto;
 }
 .board_title{
     font-size: 1.2em;
@@ -1275,8 +1329,14 @@ export default {
 .btn.green{
     background: #009688;
 }
+.btn.green:hover{
+  box-shadow: 0 5px 20px -10px #009688;
+}
 .btn.blue{
     background: #0d47a1;
+}
+.btn.blue:hover{
+  box-shadow: 0 5px 20px -10px #0d47a1;
 }
 .file_config_board{
   height: calc(100% - 60px);
@@ -1356,7 +1416,7 @@ export default {
 .md_node_note{
       position: absolute;
         max-height: calc(80% - 60px);
-    max-width: 30%;
+    max-width: 40%;
     top: calc(10% + 60px);
     left: 10px;
     box-shadow: 10px 10px 20px -5px  rgba(0,0,0,.1);
@@ -1368,8 +1428,8 @@ export default {
     // text-indent: 20px;
     word-wrap: break-word;
     word-break: normal;
-    border:2px solid white;
     overflow: auto;
+    font-family: 'KaTeX_Main';
 }
 
 .md_node_note.markdown_mode{
@@ -1379,6 +1439,22 @@ export default {
     height: calc(100% - 80px);
     max-height: calc(100% - 80px);
     overflow: scroll;
+}
+.preview_pic_note{
+    position: absolute;
+    max-height: calc(80% - 60px);
+    max-width: 30%;
+    top: calc(10% + 60px);
+    left: 10px;
+    box-shadow: 10px 10px 20px -5px  rgba(0,0,0,.1);
+    background: white;
+    border-radius: 10px;
+    text-align: justify;
+    padding: 0px;
+    box-sizing: border-box;
+    // text-indent: 20px;
+    word-wrap: break-word;
+    word-break: normal;
 }
 .el-textarea.markdown_mode{
       position: fixed;
