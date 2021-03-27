@@ -18,7 +18,7 @@ Inspired by **XMind**, I designed the MindBox with many necessary and useful Fea
 
 You can config your gitee options in `src/index.js`.
 
-Here is a [demo](https://wykxldz.github.io/MindBox/dist/) without gitee storage.
+Here is a [demo](http://wykxldz.gitee.io/mindbox/?u=WYKXLDZ&r=MindBoxCollection&s=3746793b39d93d69f05aaac9ac39035ec3ae5544&n=Demo.mb) without gitee storage.
 
 Enjoy it!
 
