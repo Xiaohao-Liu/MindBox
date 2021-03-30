@@ -6,14 +6,15 @@ module.exports={
         height: 60,
         attrs: {
             body: {
-                stroke: 'white',
-                fill: '#b39ddb',
+                stroke: 'black',
+                fill: 'white',
                 rx: 20,
                 ry: 20,
             },
             text:{
                 text:"中心主题",
                 fill:'black',
+                fontFamily:"monospace",
                 fontSize: "18",
                 fontWeight: "bold"
             }
@@ -30,8 +31,8 @@ module.exports={
         height: 40,
         attrs: {
             body: {
-            stroke: 'white',
-            fill: '#d1c4e9',
+            stroke: 'black',
+            fill: 'white',
             rx: 15,
             ry: 15,
             },
@@ -53,7 +54,7 @@ module.exports={
         height: 20,
         attrs: {
             body: {
-            stroke: 'white',
+            stroke: 'black',
             fill: 'white',
             rx: 5,
             ry: 5,

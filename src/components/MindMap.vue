@@ -9,6 +9,11 @@
       >
         <div class="header_btn" v-on:click="(item.enable&&item.click())">
           <i :class="item.icon"/> {{item.title}}
+          <el-switch v-if="item.type=='btn'"
+            v-model="item.enable"
+            active-color="#13ce66"
+            inactive-color="#ff4949">
+          </el-switch>
         </div>
         <div class="header_name">{{item.name}}</div>
       </div>
@@ -36,7 +41,7 @@
       </div>
     </div>
     <div class="config_board node_config_board" v-if="!read_mode&&node_config.show">
-      <div class="board_title">{{node_config.title}}</div>
+      <div class="board_title">{{node_config.title}}<div class="btn green" v-if="markdown_mode" @click="markdown_mode=false;" style="position:absolute;top:0px;right:10px;">X</div></div>
       <el-card>
         <div slot="header" class="clearfix">
           <span>标题</span>
@@ -196,13 +201,14 @@ Graph.registerEdge(
     attrs: {
       line: {
         stroke: systemDark?'#fff':"#333",
+        strokeWidth:2,
       },
     },
     connector: { name: 'rounded' },
     router: {
       name: 'manhattan',
       args: {
-        startDirections: ['bottom'],
+        startDirections: ['bottom','left','right'],
         endDirections: ['top'],
       },
   },
@@ -598,9 +604,12 @@ export default {
           },
         },
         selecting: {
+          className:"select_box",
           enabled: true,
+          modifiers:'ctrl',
           multiple: true,
-          rubberband: false,
+          rubberband: true,
+          strict:true,
           movable: true,
           showNodeSelectionBox: true,
         },
@@ -610,7 +619,26 @@ export default {
           allowMulti: this.read_mode?false:true,
           allowLoop: this.read_mode?false:true,
           allowEdge: false,
-          allowPort: false
+          allowPort: false,
+          highlight: true,
+          snap:true,
+          createEdge:() =>{
+          return this.graph.createEdge({
+            attrs: {
+              line: {
+                stroke: this.systemDark?'#fff':"#333",
+                strokeWidth: 2,
+                connector: { name: 'rounded' },
+                targetMarker: {
+                  name: 'block',
+                  args: {
+                    size: '6',
+                  },
+                },
+              },
+            },
+          })
+        },
         },
         panning:true,
         background:{
@@ -618,6 +646,7 @@ export default {
         }
       }
       this.graph = new Graph(default_graph_option);
+      console.log(this.graph.create)
     },
     send_a_request:function(){
       this.request_lock=true;
@@ -709,7 +738,7 @@ export default {
       this.tool_bar_list[this.tool_map[name]].enable=false;
     },
     __change_node_label:function(){
-      let w = this.node_config.label.length * 16;
+      let w = this.node_config.label.length * 12;
       let size = this.selected_node.getProp("size")
       this.selected_node.setProp("size",{width:w,height:size.height})
       this.selected_node.attr({text:{text:this.node_config.label}})
@@ -722,6 +751,22 @@ export default {
     },
     __change_node_fill:function(){
       this.selected_node.attr({body:{fill:this.node_config.fill}})
+      let rgb = this.colorRgb(this.node_config.fill).substring(4)
+      rgb = rgb.substring(0,rgb.length-1).split(",");
+      let strokergb=[]
+      rgb.forEach(c=>{
+        c = parseInt(c);
+        if (c == 255){
+          c=0;}
+        else{
+          c*=1.4;c=parseInt(c);}
+        if (c > 255){
+          c=255;}
+          strokergb.push(c)
+      })
+      strokergb ="rgb("+ strokergb.join(",")+")";
+      this.node_config.stroke = this.colorHex(strokergb);
+      this.selected_node.attr({body:{stroke:this.node_config.stroke}})
     },
     __change_node_stroke:function(){
       this.selected_node.attr({body:{stroke:this.node_config.stroke}})
@@ -1234,6 +1279,49 @@ export default {
         return decodeURIComponent(atob(str).split('').map(function (c) {
             return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
         }).join(''));
+    },
+    colorHex:function(color){
+      var reg = /^(rgb|RGB)/;
+      if (reg.test(color)) {
+        var strHex = "#";
+        // 把RGB的3个数值变成数组
+        var colorArr = color.replace(/(?:\(|\)|rgb|RGB)*/g, "").split(",");
+        // 转成16进制
+        for (var i = 0; i < colorArr.length; i++) {
+          var hex = Number(colorArr[i]).toString(16);
+          if (hex === "0") {
+            hex += hex;
+          }
+          strHex += hex;
+        }
+        return strHex;
+      } else {
+        return String(color);
+      }
+    },
+    colorRgb:function (color) {
+      // 16进制颜色值的正则
+      var reg = /^#([0-9a-fA-f]{3}|[0-9a-fA-f]{6})$/;
+      // 把颜色值变成小写
+      color = color.toLowerCase();
+      if (reg.test(color)) {
+        // 如果只有三位的值，需变成六位，如：#fff => #ffffff
+        if (color.length === 4) {
+          var colorNew = "#";
+          for (let i = 1; i < 4; i += 1) {
+            colorNew += color.slice(i, i + 1).concat(color.slice(i, i + 1));
+          }
+          color = colorNew;
+        }
+        // 处理六位的颜色值，转为RGB
+        var colorChange = [];
+        for (let i = 1; i < 7; i += 2) {
+          colorChange.push(parseInt("0x" + color.slice(i, i + 2)));
+        }
+        return "RGB(" + colorChange.join(",") + ")";
+      } else {
+        return color;
+      }
     }
   }
 }
@@ -1458,10 +1546,11 @@ export default {
 }
 .el-textarea.markdown_mode{
       position: fixed;
-    top: 10px;
-    right: calc(100% + 10px);
+    top: 50px;
+    right: 0px;
     width: 100%;
-    height: calc(100% - 20px);
+    height: calc(100% - 50px);
+    z-index:2;
     ::v-deep .el-textarea__inner{
       height: 100% !important;
       overflow: scroll;
@@ -1538,6 +1627,31 @@ export default {
 }
 </style>
 <style lang="scss" rel="stylesheet/scss">
+.x6-node *{font-family: monospace;}
+.x6-widget-selection-box{
+    border-radius: 10px;
+    border-color: #f56c6c;
+    box-shadow: 0px 5px 10px rgba(0,0,0,.2);
+}
+.x6-widget-transform{
+  border-color: transparent;
+}
+.x6-widget-transform > div{
+  border-color: #f56c6c;
+}
+.x6-widget-selection-inner{
+    margin-top: -20px;
+    margin-left: -20px;
+    padding-right: 40px;
+    padding-bottom: 40px;
+    border: 2px solid #f56c6c;
+    border-radius:10px;
+}
+.x6-widget-selection-rubberband{
+  background:#f56c6c;
+  border-radius:10px;
+  border-color:red;
+}
 .md_node_note{
 thead th{
     background: transparent !important;
