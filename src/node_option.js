@@ -8,13 +8,12 @@ module.exports={
             body: {
                 stroke: 'black',
                 fill: 'white',
-                rx: 20,
-                ry: 20,
+                rx: 10,
+                ry: 10,
             },
             text:{
                 text:"中心主题",
                 fill:'black',
-                fontFamily:"monospace",
                 fontSize: "18",
                 fontWeight: "bold"
             }

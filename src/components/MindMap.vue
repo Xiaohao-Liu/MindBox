@@ -7,12 +7,13 @@
       v-for="item in tool_bar_list" :key="item.name"
       v-show="item.show"
       >
-        <div class="header_btn" v-on:click="(item.enable&&item.click())">
+        <div class="header_btn" v-on:click="(item.enable&&item.type!='btn'&&item.click())">
           <i :class="item.icon"/> {{item.title}}
           <el-switch v-if="item.type=='btn'"
             v-model="item.enable"
             active-color="#13ce66"
-            inactive-color="#ff4949">
+            inactive-color="#ff4949"
+            @change="item.click()">
           </el-switch>
         </div>
         <div class="header_name">{{item.name}}</div>
@@ -180,7 +181,7 @@
       <div class="board_title">{{file_config.title}}</div>
       <div class="btn blue iconfont icon-refresh" v-on:click="this.__get_gitee_files"></div>
       <div class="file_item iconfont icon-file" v-for="item in file_config.list" :key="item.path">
-        <div  style="width:calc(100% - 30px);float:right;white-space: nowrap;overflow: hidden;text-overflow: ellipsis;"  v-on:click="__load_gitee_file(item.path,item.sha);file_config.show=false;">
+        <div  style="width:calc(100% - 30px);float:right;white-space: nowrap;overflow: hidden;text-overflow: ellipsis;"  v-on:click="__load_gitee_file(item.path,item.sha);">
           {{item.path}}
         </div>
       </div>
@@ -200,7 +201,6 @@ Graph.registerEdge(
     inherit: 'edge',
     attrs: {
       line: {
-        stroke: systemDark?'#fff':"#333",
         strokeWidth:2,
       },
     },
@@ -458,6 +458,17 @@ export default {
             DataUri.downloadDataUri(DataUri.svgToDataUrl(dataUri), this.file_name+'.svg')
           },{serializeImages:true,viewBox:"0"})},
         },
+        {
+          name:"深色模式",
+          width:100,
+          style:"",
+          enable:this.darkmode,
+          show:true,
+          type:'btn',
+          icon:"",
+          title:"",
+          click:()=>{this.darkmode = !this.darkmode;this.tool_bar_list[this.tool_map['darkmode']].enable=this.darkmode;},
+        },
       ],
       tool_map:{
         "file":1,
@@ -466,8 +477,9 @@ export default {
         "child":4,
         "sibling":5,
         "group":6,
+        "darkmode":15
       },
-      read_mode_bar:new Set([0,1,7,8,9]),
+      read_mode_bar:new Set([0,1,7,8,9,15]),
       pushed_pic_config:{
         show:false,
         name:"",
@@ -626,7 +638,6 @@ export default {
           return this.graph.createEdge({
             attrs: {
               line: {
-                stroke: this.systemDark?'#fff':"#333",
                 strokeWidth: 2,
                 connector: { name: 'rounded' },
                 targetMarker: {
@@ -738,10 +749,13 @@ export default {
       this.tool_bar_list[this.tool_map[name]].enable=false;
     },
     __change_node_label:function(){
-      let w = this.node_config.label.length * 12;
+      
+      
+      this.selected_node.attr({text:{text:this.node_config.label}});
+      let w = this.getElementsByAttr("g","data-cell-id", this.selected_node.id).getElementsByTagName("text")[0].getBBox().width + 20
       let size = this.selected_node.getProp("size")
+
       this.selected_node.setProp("size",{width:w,height:size.height})
-      this.selected_node.attr({text:{text:this.node_config.label}})
     },
     __change_node_can_link:function(){
       this.selected_node && this.selected_node.attr('body/magnet', this.node_config.can_link)
@@ -1159,6 +1173,7 @@ export default {
       if(!this.can_request()){return;}
       this.send_a_request();
       this.loading=true;
+      this.file_config.show=false;
       this.gAPI.get_file_by_sha(sha).then(res=>{
         this.graph.fromJSON(JSON.parse(this.__decode(res.data.content)))
         this.graph.centerContent();
@@ -1322,6 +1337,14 @@ export default {
       } else {
         return color;
       }
+    },
+    getElementsByAttr: function(tagname, attrname, value) {
+      let eles = document.getElementsByTagName(tagname)
+      for(let i = 0; i <= eles.length; i ++){
+        if(eles[i].getAttribute(attrname)==value){
+          return eles[i]
+        }
+      }
     }
   }
 }
@@ -1347,7 +1370,7 @@ export default {
     text-align: center;
     border-radius: 5px;
     border: 1px solid #ddd;
-    line-height: 30px;
+    line-height: 26px;
     box-shadow: 0px 2px 10px -2px rgba(0,0,0,.2);
     transition: ease .5s;
     margin: 5px;
@@ -1407,7 +1430,7 @@ export default {
     transition:ease .5s;
     cursor: pointer;
     display: flex;
-    justify-content: space-around;
+    justify-content: space-evenly;
     height:20px;
     line-height: 20px;
 }
@@ -1627,7 +1650,7 @@ export default {
 }
 </style>
 <style lang="scss" rel="stylesheet/scss">
-.x6-node *{font-family: monospace;}
+.x6-node *{font-family: 'KaTeX_Main';}
 .x6-widget-selection-box{
     border-radius: 10px;
     border-color: #f56c6c;
@@ -1652,6 +1675,26 @@ export default {
   border-radius:10px;
   border-color:red;
 }
+.x6-cell.x6-edge path[marker-end]{
+  stroke:#333;
+}
+marker path{
+    stroke:#333;
+    fill:#333;
+  }
+.dark_mode{
+  marker path{
+    stroke:white;
+    fill:white;
+  }
+  .x6-cell.x6-edge path[marker-end]{
+    stroke:white;
+  }
+  .el-loading-mask{
+    background-color: rgba(0,0,0,.9);
+  }
+}
+
 .md_node_note{
 thead th{
     background: transparent !important;
