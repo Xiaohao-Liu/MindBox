@@ -14,6 +14,7 @@ Inspired by **XMind**, I designed the MindBox with many necessary and useful Fea
 - note node
 - upload to your gitee repo
 - file manager (open an online file)
+- dark mode
 - ...
 
 You can config your gitee options in `src/index.js`.
