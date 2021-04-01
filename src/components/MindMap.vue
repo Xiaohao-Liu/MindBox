@@ -593,6 +593,8 @@ export default {
       
     },
     __init_graph:function(){
+        // darkmode
+        this.tool_bar_list[this.tool_map['darkmode']].enable=this.darkmode;
         const default_graph_option={
         container: document.getElementById('antv_container'),
         history:this.read_mode?false:true,
