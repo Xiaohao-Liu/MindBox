@@ -1,194 +1,218 @@
 <template>
-  <el-container :class="'main'+(darkmode?' dark_mode':'')" v-loading="loading">
-    <el-header>
-      <div 
-      :class="'header_item '+(item.enable?'enable':'disable')" 
-      :style="'width:'+item.width+'px;'+item.style" 
-      v-for="item in tool_bar_list" :key="item.name"
-      v-show="item.show"
-      >
-        <div class="header_btn" v-on:click="(item.enable&&item.type!='btn'&&item.click())">
-          <i :class="item.icon"/> {{item.title}}
-          <el-switch v-if="item.type=='btn'"
-            v-model="item.enable"
-            active-color="#13ce66"
-            inactive-color="#ff4949"
-            @change="item.click()">
-          </el-switch>
+  <div id="app_" :class="'main'+(darkmode?' dark_mode':'')">
+    <div id="main" :class="position_mode?'position_mode':''">
+      <el-container v-loading="loading">
+        <el-header>
+          <div 
+          :class="'header_item '+(item.enable?'enable':'disable')" 
+          :style="'width:'+item.width+'px;'+item.style" 
+          v-for="item in tool_bar_list" :key="item.name"
+          v-show="item.show"
+          >
+            <div class="header_btn" v-on:click="(item.enable&&item.type!='btn'&&item.click())">
+              <i :class="item.icon"/> {{item.title}}
+              <el-switch v-if="item.type=='btn'"
+                v-model="item.enable"
+                active-color="#13ce66"
+                inactive-color="#ff4949"
+                @change="item.click()">
+              </el-switch>
+            </div>
+            <div class="header_name">{{item.name}}</div>
+          </div>
+        </el-header>
+        <el-main style="height:calc(100vh - 60px);padding:0px;" id="antv_container"></el-main>
+        <el-card v-show="pushed_pic_config.show" class="pic_upload_board" v-loading="pushed_pic_config.loadding">
+            <img id="pushed_image" :src="pushed_pic_config.base64||pushed_pic_config.url" style="width:100%;"/>  
+              <p v-show="pushed_pic_config.base64=='' && pushed_pic_config.url==''  && !pushed_pic_config.pushed" style="text-align:center;">NO IMAGE!</p>   
+              <!-- <el-input placeholder="照片名称" v-model="pushed_pic_config.name" v-show="!pushed_pic_config.pushed && pushed_pic_config.url.length==0">
+                  <el-button slot="append" icon="el-icon-upload" v-on:click="push_a_pic"></el-button>
+              </el-input> -->
+              <el-input placeholder="照片链接" v-model="pushed_pic_config.url" style="margin-top:10px;"></el-input>
+              <div class="btn green" v-if="pushed_pic_config.url.length>0" v-on:click="__tool_add_pic_2">添加到画布</div>
+        </el-card>
+        <div class="first_load_cover" v-if="first_load">
+          <div class="first_load_board">
+            <div v-if="read_mode">
+              {{cover_msg}}
+            </div>
+            <div v-else>
+              Choose a Operation:
+              <div class="btn green iconfont icon-new" v-on:click="__init_a_blank_project"> Create</div>
+              <div class="btn green iconfont icon-storage" v-on:click="__init_an_online_project" v-if="gitee_enable"> Open</div>
+            </div>
+          </div>
         </div>
-        <div class="header_name">{{item.name}}</div>
-      </div>
-    </el-header>
-    <el-main style="height:calc(100% - 60px);padding:0px;" id="antv_container"></el-main>
-    <el-card v-show="pushed_pic_config.show" class="pic_upload_board" v-loading="pushed_pic_config.loadding">
-        <img id="pushed_image" :src="pushed_pic_config.base64||pushed_pic_config.url" style="width:100%;"/>  
-          <p v-show="pushed_pic_config.base64=='' && pushed_pic_config.url==''  && !pushed_pic_config.pushed" style="text-align:center;">NO IMAGE!</p>   
-          <!-- <el-input placeholder="照片名称" v-model="pushed_pic_config.name" v-show="!pushed_pic_config.pushed && pushed_pic_config.url.length==0">
-              <el-button slot="append" icon="el-icon-upload" v-on:click="push_a_pic"></el-button>
-          </el-input> -->
-          <el-input placeholder="照片链接" v-model="pushed_pic_config.url" style="margin-top:10px;"></el-input>
-          <div class="btn green" v-if="pushed_pic_config.url.length>0" v-on:click="__tool_add_pic_2">添加到画布</div>
-    </el-card>
-    <div class="first_load_cover" v-if="first_load">
-      <div class="first_load_board">
-        <div v-if="read_mode">
-          {{cover_msg}}
-        </div>
-        <div v-else>
-          Choose a Operation:
-          <div class="btn green iconfont icon-new" v-on:click="__init_a_blank_project"> Create</div>
-          <div class="btn green iconfont icon-storage" v-on:click="__init_an_online_project" v-if="gitee_enable"> Open</div>
-        </div>
-      </div>
-    </div>
-    <div class="config_board node_config_board" v-if="!read_mode&&node_config.show">
-      <div class="board_title">{{node_config.title}}<div class="btn green" v-if="markdown_mode" @click="markdown_mode=false;" style="position:absolute;top:0px;right:10px;">X</div></div>
-      <el-card>
-        <div slot="header" class="clearfix">
-          <span>标题</span>
-        </div>
-        <el-input v-model="node_config.label" @change="__change_node_label" placeholder="请输入内容"></el-input>
-      </el-card>
-      <el-card style="margin-top:10px;">
-        <div slot="header" class="clearfix">
-          <span>备注 <el-button style="background:transparent;border:0px;" plain icon="el-icon-edit" @click="markdown_mode=true"></el-button></span>
-        </div>
-        <el-input
-          type="textarea"
-          :class="(markdown_mode?'markdown_mode':'')"
-          :autosize="{ minRows: 2, maxRows: 4}"
-          placeholder="请输入内容"
-          v-model="node_config.note"
-          @change="__change_node_note">
-        </el-input>
-      </el-card>
-      <div class="color_selector_board">
-        <div class="color_selector">
-        <el-row>
-        <el-col :span="12">
-          填充颜色: 
-        </el-col>
-        <el-col :span="12">
-        <el-color-picker
-          v-model="node_config.fill"
-          :predefine="predefineColors"
-          @change="__change_node_fill">
-        </el-color-picker></el-col></el-row>
-        </div>
-        <div class="color_selector">
-        <el-row>
-        <el-col :span="12">
-          边框颜色: 
-        </el-col>
-        <el-col :span="12"><el-color-picker
-          v-model="node_config.stroke"
-          :predefine="predefineColors"
-          @change="__change_node_stroke">
-        </el-color-picker></el-col></el-row>
-        </div>
-        <div class="color_selector">
-        <el-row>
-        <el-col :span="12">
-          文字颜色: 
-        </el-col>
-        <el-col :span="12">
-          <el-color-picker
-          v-model="node_config.text_color"
-          :predefine="predefineColors"
-          @change="__change_node_text_color">
-        </el-color-picker>
-        </el-col>
+        <div class="config_board node_config_board" v-if="!read_mode&&node_config.show">
+          <div class="board_title">{{node_config.title}}<div class="btn green" v-if="markdown_mode" @click="markdown_mode=false;" style="position:absolute;top:0px;right:10px;">X</div></div>
+          <el-card>
+            <div slot="header" class="clearfix">
+              <span>标题</span>
+            </div>
+            <el-input v-model="node_config.label" @change="__change_node_label" placeholder="请输入内容"></el-input>
+          </el-card>
+          <el-card style="margin-top:10px;">
+            <div slot="header" class="clearfix">
+              <span>备注 <el-button style="background:transparent;border:0px;" plain icon="el-icon-edit" @click="markdown_mode=true"></el-button></span>
+            </div>
+            <el-input
+              type="textarea"
+              :class="(markdown_mode?'markdown_mode':'')"
+              :autosize="{ minRows: 2, maxRows: 4}"
+              placeholder="请输入内容"
+              v-model="node_config.note"
+              @change="__change_node_note">
+            </el-input>
+          </el-card>
+          <div class="color_selector_board">
+            <div class="color_selector">
+            <el-row>
+            <el-col :span="12">
+              填充颜色: 
+            </el-col>
+            <el-col :span="12">
+            <el-color-picker
+              v-model="node_config.fill"
+              :predefine="predefineColors"
+              @change="__change_node_fill">
+            </el-color-picker></el-col></el-row>
+            </div>
+            <div class="color_selector">
+            <el-row>
+            <el-col :span="12">
+              边框颜色: 
+            </el-col>
+            <el-col :span="12"><el-color-picker
+              v-model="node_config.stroke"
+              :predefine="predefineColors"
+              @change="__change_node_stroke">
+            </el-color-picker></el-col></el-row>
+            </div>
+            <div class="color_selector">
+            <el-row>
+            <el-col :span="12">
+              文字颜色: 
+            </el-col>
+            <el-col :span="12">
+              <el-color-picker
+              v-model="node_config.text_color"
+              :predefine="predefineColors"
+              @change="__change_node_text_color">
+            </el-color-picker>
+            </el-col>
+              </el-row>
+            </div>
+          </div>
+          
+          <el-row>
+            <el-col :span="12">
+              链接
+            </el-col>
+            <el-col :span="12">
+              <el-switch
+              v-model="node_config.can_link"
+              active-color="#13ce66"
+              inactive-color="#ff4949"
+              @change="__change_node_can_link">
+            </el-switch>
+            </el-col>
           </el-row>
+            
+            <div v-if="selected_node.store.data.idx!=0" class="btn" v-on:click="__del_node">Delete</div>
+            
         </div>
-      </div>
-      
-      <el-row>
-        <el-col :span="12">
-          链接
-        </el-col>
-        <el-col :span="12">
-          <el-switch
-          v-model="node_config.can_link"
-          active-color="#13ce66"
-          inactive-color="#ff4949"
-          @change="__change_node_can_link">
-        </el-switch>
-        </el-col>
-      </el-row>
+        <div id="node_note" :class="'md_node_note'+(markdown_mode?' markdown_mode':'')"  v-if="node_config.show&&node_config.note!=''">
+        <div class="btn green el-icon-tickets" @click="node_note_raw_text=!node_note_raw_text">{{node_note_raw_text?'Markdown':'Raw Text'}}</div>
+        <textarea style="width: 30vw;border: 0px;height: 50vh;border-radius: 5px;padding: 5px;" v-if="node_note_raw_text" :value="node_config.note"></textarea>
+        <div v-else v-html="markdown.render(node_config.note)"></div>
         
-        <div v-if="selected_node.store.data.idx!=0" class="btn" v-on:click="__del_node">Delete</div>
+        </div>
         
-    </div>
-    <div id="node_note" :class="'md_node_note'+(markdown_mode?' markdown_mode':'')"  v-if="node_config.show&&node_config.note!=''">
-    <div class="btn green el-icon-tickets" @click="node_note_raw_text=!node_note_raw_text">{{node_note_raw_text?'Markdown':'Raw Text'}}</div>
-    <textarea style="width: 30vw;border: 0px;height: 50vh;border-radius: 5px;padding: 5px;" v-if="node_note_raw_text" :value="node_config.note"></textarea>
-    <div v-else v-html="markdown.render(node_config.note)"></div>
-    
-    </div>
-    
-    <img id="pushed_image"  class="preview_pic_note"  v-if="image_config.show&&image_config.url!=''" v-on:click="image_config.fullscreen=true" style="cursor: zoom-in;" :src="image_config.url"/>
-    
-    <div class="config_board edge_config_board" v-if="!read_mode&&edge_config.show">
-      <div class="board_title">{{edge_config.title}}</div>
-      <el-card>
-        <div slot="header" class="clearfix">
-          <span>标题</span>
+        <img id="pushed_image"  class="preview_pic_note"  v-if="image_config.show&&image_config.url!=''" v-on:click="image_config.fullscreen=true" style="cursor: zoom-in;" :src="image_config.url"/>
+        
+        <div class="config_board edge_config_board" v-if="!read_mode&&edge_config.show">
+          <div class="board_title">{{edge_config.title}}</div>
+          <el-card>
+            <div slot="header" class="clearfix">
+              <span>标题</span>
+            </div>
+            <el-input v-model="edge_config.label" @change="__change_edge_label" placeholder="请输入内容"></el-input>
+          </el-card>
+          <div class="btn" v-on:click="__del_edge">Delete</div>
         </div>
-        <el-input v-model="edge_config.label" @change="__change_edge_label" placeholder="请输入内容"></el-input>
-      </el-card>
-      <div class="btn" v-on:click="__del_edge">Delete</div>
-    </div>
-    <div class="config_board group_config_board" v-if="!read_mode&&group_config.show">
-      <div class="board_title">{{group_config.title}}</div>
-      <div class="color_selector_board">
-        <div class="color_selector">
-        <el-row>
-        <el-col :span="12">
-          填充颜色: 
-        </el-col>
-        <el-col :span="12">
-        <el-color-picker
-          v-model="node_config.fill"
-          :predefine="predefineColors"
-          @change="__change_node_fill">
-        </el-color-picker></el-col></el-row>
+        <div class="config_board group_config_board" v-if="!read_mode&&group_config.show">
+          <div class="board_title">{{group_config.title}}</div>
+          <div class="color_selector_board">
+            <div class="color_selector">
+            <el-row>
+            <el-col :span="12">
+              填充颜色: 
+            </el-col>
+            <el-col :span="12">
+            <el-color-picker
+              v-model="node_config.fill"
+              :predefine="predefineColors"
+              @change="__change_node_fill">
+            </el-color-picker></el-col></el-row>
+            </div>
+            <div class="color_selector">
+            <el-row>
+            <el-col :span="12">
+              边框颜色: 
+            </el-col>
+            <el-col :span="12"><el-color-picker
+              v-model="node_config.stroke"
+              :predefine="predefineColors"
+              @change="__change_node_stroke">
+            </el-color-picker></el-col></el-row>
+            </div>
+          </div>
+          <div class="btn" v-on:click="__del_group">Delete</div>
         </div>
-        <div class="color_selector">
-        <el-row>
-        <el-col :span="12">
-          边框颜色: 
-        </el-col>
-        <el-col :span="12"><el-color-picker
-          v-model="node_config.stroke"
-          :predefine="predefineColors"
-          @change="__change_node_stroke">
-        </el-color-picker></el-col></el-row>
+        <div class="config_board image_config_board" v-if="!read_mode&&image_config.show">
+          <div class="board_title">{{image_config.title}}</div>
+          <el-card>
+            <div slot="header" class="clearfix">
+              <span>图片链接</span>
+            </div>
+            <el-input v-model="image_config.url" @change="__change_image_url" placeholder="请输入内容"></el-input>
+          </el-card>
+          <div class="btn" v-on:click="__del_image">Delete</div>
         </div>
-      </div>
-      <div class="btn" v-on:click="__del_group">Delete</div>
-    </div>
-    <div class="config_board image_config_board" v-if="!read_mode&&image_config.show">
-      <div class="board_title">{{image_config.title}}</div>
-      <el-card>
-        <div slot="header" class="clearfix">
-          <span>图片链接</span>
+        <div class="config_board file_config_board" v-if="!read_mode&&file_config.show">
+          <div class="board_title">{{file_config.title}}</div>
+          <div class="btn blue iconfont icon-refresh" v-on:click="this.__get_gitee_files"></div>
+          <div class="file_item iconfont icon-file" v-for="item in file_config.list" :key="item.path">
+            <div  style="width:calc(100% - 30px);float:right;white-space: nowrap;overflow: hidden;text-overflow: ellipsis;"  v-on:click="__load_gitee_file(item.path,item.sha);">
+              {{item.path}}
+            </div>
+          </div>
         </div>
-        <el-input v-model="image_config.url" @change="__change_image_url" placeholder="请输入内容"></el-input>
-      </el-card>
-      <div class="btn" v-on:click="__del_image">Delete</div>
-    </div>
-    <div class="config_board file_config_board" v-if="!read_mode&&file_config.show">
-      <div class="board_title">{{file_config.title}}</div>
-      <div class="btn blue iconfont icon-refresh" v-on:click="this.__get_gitee_files"></div>
-      <div class="file_item iconfont icon-file" v-for="item in file_config.list" :key="item.path">
-        <div  style="width:calc(100% - 30px);float:right;white-space: nowrap;overflow: hidden;text-overflow: ellipsis;"  v-on:click="__load_gitee_file(item.path,item.sha);">
-          {{item.path}}
+        <div v-if="image_config.fullscreen" class="fullscreen_image" v-on:click="image_config.fullscreen=false" :style="{backgroundImage:'url('+image_config.url+')'}">
         </div>
-      </div>
+      </el-container>
     </div>
-    <div v-if="image_config.fullscreen" class="fullscreen_image" v-on:click="image_config.fullscreen=false" :style="{backgroundImage:'url('+image_config.url+')'}">
+    <div id="center" :class="position_mode?'position_mode':''" @click="position_mode=false;"></div>
+    <div id="right"  :class="position_mode?'position_mode':''">
+      <!-- <el-tag
+      v-for="position in positions"
+      :key="position.name"
+      closable
+      @click="to_position(position)"
+      @close="delte_position(position)">
+      {{position.name}}
+    </el-tag> -->
+    <div class="btn green" style="height:40px;line-height:40px;padding:0px;width:calc(100% - 40px);overflow:hidden;" v-for="position in positions" :key="position.name">
+      <div style="width:calc(100% - 40px);background:transparent" @click="to_position(position)">{{position.name}}</div>
+      <i v-if="!read_mode" class="el-icon-close close-btn" style="width:40px;line-height:40px;" @click="delte_position(position)"></i>
     </div>
-  </el-container>
+    <span v-if="positions.length==0" style="position:absolute;top:20px;left:0px;width:100%;">No Locations</span>
+
+    </div>
+    <div v-if="!read_mode" id="bottom" :class="position_mode?'position_mode':''">
+      <div class="btn blue" style="width:100px" @click="add_position"><i class="el-icon-add-location"></i> 添加定位</div>
+    </div>
+  </div>
 </template>
 
 <script>
@@ -277,6 +301,7 @@ export default {
     return {
       gitee_info:gitee_info,
       read_mode:false,
+      position_mode:false,
       cover_msg:"加载中...",
       markdown:md,
       node_note_raw_text:false,
@@ -287,6 +312,7 @@ export default {
       file_name:"untitled",
       file_sha:"null",
       file_type:"mb",
+      graph:null,
       online_file:false,
       selected_node:null,
       selected_edge:null,
@@ -469,6 +495,16 @@ export default {
           title:"",
           click:()=>{this.darkmode = !this.darkmode;this.tool_bar_list[this.tool_map['darkmode']].enable=this.darkmode;},
         },
+        {
+          name:"定位",
+          width:40,
+          style:"",
+          enable:true,
+          show:true,
+          icon:"el-icon-place",
+          title:"",
+          click:()=>{this.position_mode = true;},
+        },
       ],
       tool_map:{
         "file":1,
@@ -477,9 +513,9 @@ export default {
         "child":4,
         "sibling":5,
         "group":6,
-        "darkmode":15
+        "darkmode":15,
       },
-      read_mode_bar:new Set([0,1,7,8,9,15]),
+      read_mode_bar:new Set([0,1,2,3,7,8,9,15,16]),
       pushed_pic_config:{
         show:false,
         name:"",
@@ -523,6 +559,7 @@ export default {
         loading:false,
         list:[]
       },
+      positions:[],
       markdown_mode:false
     }
   },
@@ -533,6 +570,7 @@ export default {
     this.__add_events();
     this.__add_keyboard_events();
     if(this.read_mode){this.__load_online_file()}
+    console.log(this.graph)
   },
   methods:{ 
     index:function(){
@@ -578,7 +616,13 @@ export default {
       this.send_a_request();
       this.loading=true;
       this.gAPI.get_file_by_sha(this.file_sha).then(res=>{
-        this.graph.fromJSON(JSON.parse(this.__decode(res.data.content)))
+        this.jsondata = JSON.parse(this.__decode(res.data.content))
+        if('graph' in this.jsondata){
+          this.grpahsource = this.jsondata['graph']
+          this.positions = this.jsondata['positions']
+        }
+        else{this.grpahsource = this.jsondata}
+        this.graph.fromJSON(this.grpahsource)
         this.graph.centerContent();
         this.tool_bar_list[this.tool_map['file']].title=this.file_name;
         this.loading=false;
@@ -597,7 +641,7 @@ export default {
         this.tool_bar_list[this.tool_map['darkmode']].enable=this.darkmode;
         const default_graph_option={
         container: document.getElementById('antv_container'),
-        history:this.read_mode?false:true,
+        history:true,
         clipboard: {
           enabled: this.read_mode?false:true,
           useLocalStorage: this.read_mode?false:true,
@@ -620,7 +664,7 @@ export default {
         selecting: {
           className:"select_box",
           enabled: true,
-          modifiers:'ctrl',
+          modifiers:'shift',
           multiple: true,
           rubberband: true,
           strict:true,
@@ -1088,6 +1132,38 @@ export default {
         }
         return false;
     },
+    add_position:function(){
+      this.$prompt('请输入位置名称', '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消'
+        }).then(({ value }) => {
+          this.positions.push({
+            name:value,
+            x:this.graph.coord.options.x,
+            y:this.graph.coord.options.y,
+          })
+          this.$message({
+            type: 'success',
+            message: '新建位置成功：' + value
+          });
+        }).catch(() => {
+          this.$message({
+            type: 'info',
+            message: '取消输入'
+          });       
+        });
+    },
+    delte_position:function(pos){
+      for(let i = 0; i < this.positions.length; i++ ){
+        if(JSON.stringify(this.positions[i])==JSON.stringify(pos)){
+          this.positions.splice(i,1);
+          break
+        }
+      }
+    },
+    to_position:function(pos){
+      this.graph.translate(pos.x, pos.y)
+    },
     // __tool_dagre_graph:function(){
     //   var data= this.__extract_graph_json();
     //   let select_id = 0;
@@ -1177,7 +1253,15 @@ export default {
       this.loading=true;
       this.file_config.show=false;
       this.gAPI.get_file_by_sha(sha).then(res=>{
-        this.graph.fromJSON(JSON.parse(this.__decode(res.data.content)))
+        this.jsondata = JSON.parse(this.__decode(res.data.content))
+        console.log(this.jsondata)
+        if('graph' in this.jsondata){
+          this.grpahsource = this.jsondata['graph']
+          this.positions = this.jsondata['positions']
+        }
+        else{this.grpahsource = this.jsondata}
+        
+        this.graph.fromJSON(this.grpahsource)
         this.graph.centerContent();
         this.file_name = name.split(".mb")[0];
         this.file_sha = sha;
@@ -1244,11 +1328,12 @@ export default {
                   });
                   reject(err.data)
                 })
-              }).catch(()=>{
+              }).catch((err)=>{
                 this.$notify({
                   title: '取消替换',
                   message: ''
                 });
+                reject(err.data)
               })
             }
           }).catch(()=>{
@@ -1261,7 +1346,12 @@ export default {
         
     },
     __upload_to_gitee:function(){
-      const content = this.__encode(JSON.stringify(this.graph.toJSON()));
+      const data = JSON.stringify({
+        graph:this.graph.toJSON(),
+        positions: this.positions
+      })
+      const content = this.__encode(data);
+      console.log(data, content)
       const name = this.file_name+'.'+this.file_type;
       this.loading=true;
       this.__upload_gitee_file(name,content).then(()=>{
@@ -1354,6 +1444,75 @@ export default {
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style lang="scss" rel="stylesheet/scss" scoped>
+#app_{
+  position: absolute;
+  height:100vh;
+  width:100vw;
+  overflow: hidden;
+  #main{
+    position: absolute;
+    height: 100%;
+    width: 100%;
+    transition:ease all .5s;
+  }
+  #main.position_mode{
+    transform: scale(0.85) translate(-7%, -7%);
+    border-radius: 10px;
+    box-shadow: 0px 0px 10px rgba(0,0,0,.1);
+  }
+  #center{
+    height:90vh;
+    width:90vw;
+    position: absolute;
+    top:0px;
+    left:0px;
+    background:transparent;
+    z-index: 2;
+    display: none;
+  }
+  #center.position_mode{
+    display: block;
+  }
+  #right{
+        height: 100vh;
+      width: 10vw;
+      background: transparent;
+      position: absolute;
+      right: -10vw;
+      top: 0px;
+      z-index: 2;
+      transition:ease all .5s;
+      .el-tag{
+        font-size: 1.2rem;
+        text-align: right;
+        width: calc(100% - 10px) ;
+        margin:5px 0px;
+        ::v-deep .el-tag__close{
+          
+        }
+      }
+  }
+  #right.position_mode{
+    right:0px;
+  }
+  #bottom{
+      height: 10vh;
+      width: 90vw;
+      background: transparent;
+      position: absolute;
+      left: 0px;
+      bottom: -10vh;
+      z-index: 2;
+      transition:ease all .5s;
+      padding: 0px 20px;
+  }
+  #bottom.position_mode{
+    bottom:0px;
+  }
+}
+.close-btn:hover{
+  background-color: #f56c6c;
+}
 .main{
   position:fixed;
   top:0px;
