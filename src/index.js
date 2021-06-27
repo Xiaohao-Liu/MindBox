@@ -1,6 +1,1 @@
-module.exports={
-        enable:false,
-        username:"",
-        repos:"",
-        token:"",
-}
+module.exports={enable:false,username:"",repos:"",token:""}

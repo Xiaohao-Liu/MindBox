@@ -69,8 +69,17 @@ GiteeAPI.prototype = {
     }
 }
 
+async function getGiteeInfo(){
+    return axios({
+        method:"get",
+        url:"/api/giteeinfo",
+        responseType: 'json'
+    })
+}
+
 module.exports={
-    GiteeAPI:GiteeAPI
+    GiteeAPI:GiteeAPI,
+    getGiteeInfo:getGiteeInfo
 }
 // const gitee_info = require("./index")
 

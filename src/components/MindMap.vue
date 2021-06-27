@@ -282,7 +282,7 @@ Graph.registerEdge(
 );
 import node_option from '../node_option';
 import gitee_info from '../index';
-import {GiteeAPI} from "../api";
+import {getGiteeInfo, GiteeAPI} from "../api";
 import "../assets/iconfont/iconfont.css"
 
 import markdownIt from 'markdown-it'
@@ -299,7 +299,8 @@ export default {
   },
   data:function(){
     return {
-      gitee_info:gitee_info,
+      gitee_info: gitee_info,
+      server_mode:false,
       read_mode:false,
       position_mode:false,
       cover_msg:"加载中...",
@@ -564,13 +565,22 @@ export default {
     }
   },
   mounted:function(){
-    this.__init_read_mode();
-    this.__init_graph();
+    getGiteeInfo().then(res=>{
+      this.server_mode = true;
+      this.gitee_info = res.data;
+      this.gitee_enable = this.gitee_info.enable;
+    }).catch(err=>{
+      console.log(err)
+    }).finally(()=>{
+      this.__init_read_mode();
+      this.__init_graph();
+      
+      this.__add_events();
+      this.__add_keyboard_events();
+      if(this.read_mode){this.__load_online_file()}
+      console.log(this.graph)
+    })
     
-    this.__add_events();
-    this.__add_keyboard_events();
-    if(this.read_mode){this.__load_online_file()}
-    console.log(this.graph)
   },
   methods:{ 
     index:function(){
