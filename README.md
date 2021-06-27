@@ -23,7 +23,20 @@ Here is a [demo](http://wykxldz.gitee.io/mindbox/?u=WYKXLDZ&r=MindBoxCollection&
 
 Enjoy it!
 
-**Project setup**
+**Deploy**
+```sh
+# pull the image
+docker pull wykxldz/mindbox 
+# set env and run
+docker run -e GITEE_USER=your_gitee_username\
+    -e GITEE_TOKEN=your_gitee_token\
+    -e MINDBOX_REPO=your_gitee_repo\
+    -e MINDBOX_GITEE_ENABLE=1\
+    -p 8080:80\
+    -d wykxldz/mindbox 
+```
+
+**Node Project setup**
 ```
 npm install
 ```
