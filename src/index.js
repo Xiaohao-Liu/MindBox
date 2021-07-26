@@ -1,4 +1,4 @@
 module.exports={
-    enable:true,
+    enable:false,
     username:"",repos:"",token:""
 }
