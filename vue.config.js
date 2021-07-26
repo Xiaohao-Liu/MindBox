@@ -1,7 +1,7 @@
 // vue.config.js
 module.exports = {
     // 选项...
-    publicPath:"/static",
+    publicPath:"./",
     transpileDependencies: [
       'vue-echarts',
       'resize-detector'
