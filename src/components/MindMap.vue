@@ -122,7 +122,7 @@
             
         </div>
         <div id="node_note" :class="'md_node_note'+(markdown_mode?' markdown_mode':'')"  v-if="node_config.show&&node_config.note!=''">
-        <div class="btn green el-icon-tickets" @click="node_note_raw_text=!node_note_raw_text">{{node_note_raw_text?'Markdown':'Raw Text'}}</div>
+        <div :class="'btn green '+(node_note_raw_text?'el-icon-tickets':'el-icon-notebook-2')" style="width:20px;border-radius:20px;"  @click="node_note_raw_text=!node_note_raw_text"></div>
         <textarea style="width: 30vw;border: 0px;height: 50vh;border-radius: 5px;padding: 5px;" v-if="node_note_raw_text" :value="node_config.note"></textarea>
         <div v-else v-html="markdown.render(node_config.note)"></div>
         
@@ -203,7 +203,7 @@
       {{position.name}}
     </el-tag> -->
     <div class="btn green" style="height:40px;line-height:40px;padding:0px;width:calc(100% - 40px);overflow:hidden;" v-for="position in positions" :key="position.name">
-      <div style="width:calc(100% - 40px);background:transparent" @click="to_position(position)">{{position.name}}</div>
+      <div style="width:calc(100% - 40px);background:transparent" @click="to_position(position)" :title="position.name">{{position.name}}</div>
       <i v-if="!read_mode" class="el-icon-close close-btn" style="width:40px;line-height:40px;" @click="delte_position(position)"></i>
     </div>
     <span v-if="positions.length==0" style="position:absolute;top:20px;left:0px;width:100%;">No Locations</span>
@@ -322,7 +322,7 @@ export default {
       zoom:0,
       tool_bar_list:[
         {
-          name:"Arron Liu",
+          name:"Xiaohao Liu",
           width:100,
           style:"margin-right: 20px;padding-right: 20px;",
           enable:true,
@@ -339,7 +339,7 @@ export default {
           show:true,
           icon:"",
           title:"null",
-          click:()=>{this.__file_rename()},
+          click:()=>{this.__file_share_link()},
         },
         {
           name:"撤销",
@@ -578,7 +578,6 @@ export default {
       this.__add_events();
       this.__add_keyboard_events();
       if(this.read_mode){this.__load_online_file()}
-      console.log(this.graph)
     })
     
   },
@@ -591,35 +590,42 @@ export default {
         }
       }
       else{
-        alert("MindMap\nDesined by Arron Liu.");
+        alert("MindMap\nDesined by Xiaohao Liu.\nGithub: WYKXLDZ");
         }
     },
     __init_read_mode:function(){
       if(!this.gitee_info.enable)this.read_mode=true;
-      if(!this.read_mode){this.gAPI = new GiteeAPI(this.gitee_info);return;}
       const location_parames = {}
       window.location.search.substring(1).split("&").forEach(ele=>{
         let i = ele.split("=");
         location_parames[i[0]] = i[1]
       })
       try{
-        this.gitee_info={
+        let gitee_info={
           enable:true,
           username:location_parames['u'],
           repos: location_parames['r'],
           token:"",
         }
+        
         this.file_sha = location_parames['s']
         this.file_name = location_parames['n'].split(".mb")[0]
+        
+        this.read_mode=true;
+        // console.log(this.gitee_info)
+        this.gAPI = new GiteeAPI(gitee_info);
+        this.gitee_info = gitee_info
+        this.tool_bar_list.forEach((ele,idx)=>{
+          if(this.read_mode_bar.has(idx))return;
+          ele.show=false;
+        })
       }catch{
-        this.cover_msg="参数错误！"
+        if(!this.read_mode){this.gAPI = new GiteeAPI(this.gitee_info);return;}
+        else{
+          this.cover_msg="参数错误！"
+        }
         return;
       }
-      this.gAPI = new GiteeAPI(this.gitee_info);
-      this.tool_bar_list.forEach((ele,idx)=>{
-        if(this.read_mode_bar.has(idx))return;
-        ele.show=false;
-      })
     },
     __load_online_file:function(){
       if(!this.can_request()){return;}
@@ -641,7 +647,7 @@ export default {
         document.getElementsByTagName('title')[0].innerText = this.file_name;
       }).catch((err)=>{
         this.cover_msg="Wrong\n" + err
-        // console.log("wrong:", err)
+        console.log("wrong:", err)
         this.loading=false;
       })
       
@@ -713,7 +719,6 @@ export default {
         }
       }
       this.graph = new Graph(default_graph_option);
-      console.log(this.graph.create)
     },
     send_a_request:function(){
       this.request_lock=true;
@@ -740,11 +745,9 @@ export default {
     __init_a_blank_project:function(){
       this.graph.fromJSON({})
       // let center_node_class = new node_option['first'].class();
-      let center_node_op = node_option["first"];
+      // let center_node_op = node_option["first"];
       // center_node_op.html = center_node_class.node();
       // center_node_op.data.obj = center_node_class;
-      console.log(center_node_op)
-      console.log(this.graph.addNode(center_node_op))
       this.graph.centerContent();
       this.tool_bar_list[this.tool_map['file']].title=this.file_name;
       this.file_name = "untitled";
@@ -756,7 +759,6 @@ export default {
     __extract_graph_json:function(){
         const data={nodes:[],edges:[]};
         const jsondata = this.graph.toJSON();
-        console.log(jsondata)
         const ignore_data={nodes:[]}
         const children_data = {nodes:[]}
         const children_set = new Set();
@@ -860,7 +862,6 @@ export default {
           this.selected_node = args.node;
           if(cells.length >1){
             // group
-            // console.log(cells)
             this.__enable("group");
             this.__disable("child")
             this.__disable("sibling")
@@ -871,7 +872,6 @@ export default {
             return false;
           }
           if(this.selected_node.shape=="image"){
-            // console.log("image")
             this.image_config.show = true;
             this.image_config.url = this.selected_node.attr("image")["xlink:href"];
             return false;
@@ -898,7 +898,6 @@ export default {
           if(this.selected_node.store.data.idx!=0){
             this.__enable("sibling")
           }
-          // console.log(this.selected_node)
       })
       this.graph.on('node:unselected', ( ) => { 
           this.selected_node = null;
@@ -917,9 +916,7 @@ export default {
             this.edge_config.label = this.selected_edge.getLabels()[0].attrs.text.text.trim();
            }catch{
              this.edge_config.label = ''
-            //  console.log(this.selected_edge.getLabels())
            }
-          // console.log(this.selected_node)
       })
       this.graph.on('edge:connected', (args) => {
         if (args.isNew) {
@@ -930,7 +927,6 @@ export default {
       })
       this.history = this.graph.history
       this.history.on('change', () => {
-        // console.log(this.tool_bar_list[this.tool_map['redo']])
           this.history.canRedo()?this.__enable("redo"):this.__disable("redo");
           this.history.canUndo()?this.__enable("undo"):this.__disable("undo");
       })
@@ -1063,7 +1059,6 @@ export default {
       d.width = document.getElementById("pushed_image").offsetWidth;
       d.height = document.getElementById("pushed_image").offsetHeight;
       d.imageUrl = this.pushed_pic_config.url;
-      // console.log(d)
       this.graph.addNode(d)
       this.pushed_pic_config.pushed = false;
       this.pushed_pic_config.show = false;
@@ -1196,7 +1191,7 @@ export default {
     //   this.graph.fromJSON(newdata);
     //   if (select_id!=0)this.graph.select(select_id)
     // },
-    __file_rename:function(){
+    __file_share_link:function(){
       if(this.online_file){
         const file_link = "http://wykxldz.gitee.io/mindbox/?u="+this.gitee_info.username+"&r="+this.gitee_info.repos+"&s="+this.file_sha+"&n="+this.file_name+".mb"
         this.$alert('', '分享阅读链接', {
@@ -1264,7 +1259,6 @@ export default {
       this.file_config.show=false;
       this.gAPI.get_file_by_sha(sha).then(res=>{
         this.jsondata = JSON.parse(this.__decode(res.data.content))
-        console.log(this.jsondata)
         if('graph' in this.jsondata){
           this.grpahsource = this.jsondata['graph']
           this.positions = this.jsondata['positions']
@@ -1301,11 +1295,13 @@ export default {
               const data = {
                 "content":content
               }
-              this.gAPI.new_file(name,data).then(()=>{
+              this.gAPI.new_file(name,data).then((res)=>{
                 this.$notify({
                     title: '成功',
                     message: name+" 上传成功！"
                 });
+                this.file_sha = res.data.content.sha
+                this.file_name = res.data.content.name
                 resolve(res.data)
               }).catch((err)=>{
                 this.$notify({
@@ -1325,11 +1321,14 @@ export default {
                   "content":content,
                   "sha":res.data.sha
                 }
-                this.gAPI.update_file(name,data).then(()=>{
+                this.gAPI.update_file(name,data).then((res)=>{
                   this.$notify({
                       title: '成功',
                       message: name+" 替换成功！"
                   });
+                  console.log(res.data)
+                  this.file_sha = res.data.content.sha
+                  this.file_name = res.data.content.name
                   resolve(res.data)
                 }).catch((err)=>{
                   this.$notify({
@@ -1361,7 +1360,6 @@ export default {
         positions: this.positions
       })
       const content = this.__encode(data);
-      console.log(data, content)
       const name = this.file_name+'.'+this.file_type;
       this.loading=true;
       this.__upload_gitee_file(name,content).then(()=>{
@@ -1455,6 +1453,7 @@ export default {
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style lang="scss" rel="stylesheet/scss" scoped>
 #app_{
+  background:#EEE;
   position: absolute;
   height:100vh;
   width:100vw;
@@ -1462,6 +1461,7 @@ export default {
   #main{
     position: absolute;
     height: 100%;
+    background:white;
     width: 100%;
     transition:ease all .5s;
   }
@@ -1568,12 +1568,13 @@ export default {
   color:#aaa;
 }
 .config_board{
-  height: 100%;
+    height: calc(100% - 70px);
     width: 30%;
     min-width: 200px;
     position: fixed;
-    right: 0px;
-    top: 0px;
+    right: 5px;
+    top: 65px;
+    border-radius: 10px;
     background: rgba(255,255,255,.75);
     box-shadow: 0px 0px 10px rgba(0,0,0,.2);
     -webkit-backdrop-filter: saturate(180%) blur(20px);
@@ -1621,12 +1622,7 @@ export default {
   box-shadow: 0 5px 20px -10px #0d47a1;
 }
 .file_config_board{
-  height: calc(100% - 60px);
-    width: 30%;
-    min-width: 200px;
-    position: fixed;
-    left: 0px;
-    top: 60px;
+    left: 5px;
     background: rgba(255,255,255,.75);
     box-shadow: 0px 0px 10px rgba(0,0,0,.2);
     -webkit-backdrop-filter: saturate(180%) blur(20px);
@@ -1696,21 +1692,22 @@ export default {
     cursor: zoom-out;
 }
 .md_node_note{
-      position: absolute;
-        max-height: calc(80% - 60px);
+    position: absolute;
+    max-height: calc(80% - 60px);
     max-width: 40%;
     top: calc(10% + 60px);
     left: 10px;
-    box-shadow: 10px 10px 20px -5px  rgba(0,0,0,.1);
+    box-shadow: 10px 10px 20px -5px rgb(0 0 0 / 10%);
     background: white;
     border-radius: 10px;
     text-align: justify;
-    padding: 20px 20px;
+    padding: 5px 10px;
     box-sizing: border-box;
-    // text-indent: 20px;
     word-wrap: break-word;
     word-break: normal;
     overflow: auto;
+    border: 1px solid #eee;
+    padding-bottom: 20px;
     font-family: 'KaTeX_Main';
 }
 
@@ -1751,7 +1748,10 @@ export default {
     }
 }
 .dark_mode{
-  background:#333;
+  background:#333 !important;
+  #main{
+    background:#222 !important;
+  }
   .header_btn{
     background: #444;
     color:white;
@@ -1769,9 +1769,9 @@ export default {
       color: #666;
     }
   }
-  #antv_container{
-    background: #222 !important;
-  }
+  // #antv_container{
+  //   background: #222 !important;
+  // }
   .config_board{
     background:rgba(0,0,0,.75);
     color:white;

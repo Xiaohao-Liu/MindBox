@@ -32,8 +32,8 @@ module.exports={
             body: {
             stroke: 'black',
             fill: 'white',
-            rx: 15,
-            ry: 15,
+            rx: 10,
+            ry: 10,
             },
             text:{
                 text:"分支主题",
