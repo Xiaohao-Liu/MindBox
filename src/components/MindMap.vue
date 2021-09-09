@@ -179,13 +179,27 @@
           </el-card>
           <div class="btn" v-on:click="__del_image">Delete</div>
         </div>
-        <div class="config_board file_config_board" v-if="!read_mode&&file_config.show">
+        <div class="config_board file_config_board" v-if="!read_mode&&file_config.show" v-loading="file_config.loading">
           <div class="board_title">{{file_config.title}}</div>
-          <div class="btn blue iconfont icon-refresh" v-on:click="this.__get_gitee_files"></div>
-          <div class="file_item iconfont icon-file" v-for="item in file_config.list" :key="item.path">
-            <div  style="width:calc(100% - 30px);float:right;white-space: nowrap;overflow: hidden;text-overflow: ellipsis;"  v-on:click="__load_gitee_file(item.path,item.sha);">
-              {{item.path}}
-            </div>
+          <div style="display:flex;">
+            <div class="btn blue iconfont icon-refresh" v-on:click="__get_gitee_files"></div>
+            <div class="btn blue iconfont icon-new" v-on:click="__add_file_group"></div>
+            <div class="btn green iconfont icon-upload" v-on:click="__upload_file_group"></div>
+          </div>
+          <div class="group_item" v-for="group, idx in file_config.groups" :key="group.name">
+            <p style="font-size:1.2rem;font-weight:bold;line-height:20px;margin:5px 0px;">{{group.name}}</p>
+            <div class="btn red" style="width:calc(100% - 30px);" v-show="group.list.length<=0" v-on:click="__delete_file_group(idx)">Delete Group</div>
+            <draggable
+              class="list-group"
+              :list="group.list"
+              group="files"
+            >
+              <div class="file_item list-group-item" v-for="item in group.list" :key="item.path">
+                <div  style="width:calc(100% - 30px);float:right;white-space: nowrap;overflow: hidden;text-overflow: ellipsis;"  v-on:click="__load_gitee_file(item.path,item.sha);">
+                  <i class="el-icon-document"/>{{item.path}}
+                </div>
+              </div>
+            </draggable>
           </div>
         </div>
         <div v-if="image_config.fullscreen" class="fullscreen_image" v-on:click="image_config.fullscreen=false" :style="{backgroundImage:'url('+image_config.url+')'}">
@@ -217,6 +231,7 @@
 
 <script>
 import { Graph, DataUri} from '@antv/x6';
+import draggable from "vuedraggable";
 const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
 Graph.registerEdge(
@@ -281,25 +296,26 @@ Graph.registerEdge(
   true,
 );
 import node_option from '../node_option';
-import gitee_info from '../index';
-import {getGiteeInfo, GiteeAPI} from "../api";
+import {getGiteeInfo, GiteeAPI, removeToken} from "../api";
 import "../assets/iconfont/iconfont.css"
 
 import markdownIt from 'markdown-it'
 import markdownItLatex from 'markdown-it-latex'
 import 'markdown-it-latex/dist/index.css';
 import '../assets/github-markdown.min.css';
+
 const md = markdownIt()
 md.use(require('markdown-it-highlightjs'),{ inline: true })
 md.use(markdownItLatex)
 export default {
   name: 'HelloWorld',
   props: {
-    msg: String
+    // msg: String
   },
+  components: {draggable},
   data:function(){
     return {
-      gitee_info: gitee_info,
+      gitee_info: {enable:false, username:"",repos:"",token:""},
       server_mode:false,
       read_mode:false,
       position_mode:false,
@@ -309,7 +325,7 @@ export default {
       darkmode:systemDark,
       loading:false,
       first_load:true,
-      gitee_enable:gitee_info.enable,
+      gitee_enable:false,
       file_name:"untitled",
       file_sha:"null",
       file_type:"mb",
@@ -506,6 +522,16 @@ export default {
           title:"",
           click:()=>{this.position_mode = true;},
         },
+        {
+          name:"登出",
+          width:60,
+          style:"",
+          enable:true,
+          show:true,
+          icon:"el-icon-coffee-cup",
+          title:"",
+          click:()=>{removeToken();this.$router.push("/login")},
+        },
       ],
       tool_map:{
         "file":1,
@@ -558,7 +584,10 @@ export default {
         title:'Files',
         label:"",
         loading:false,
-        list:[]
+        groups:[
+          
+        ],
+        files:new Set()
       },
       positions:[],
       markdown_mode:false
@@ -567,7 +596,7 @@ export default {
   mounted:function(){
     getGiteeInfo().then(res=>{
       this.server_mode = true;
-      this.gitee_info = res.data;
+      this.gitee_info = res;
       this.gitee_enable = this.gitee_info.enable;
     }).catch(err=>{
       console.log(err)
@@ -583,7 +612,7 @@ export default {
   },
   methods:{ 
     index:function(){
-      if(!this.read_mode&&this.gitee_info.enable){
+      if(!this.read_mode&&this.gitee_enable){
         this.file_config.show = !this.file_config.show;
         if(this.file_config.show==true){
           if(this.can_request()){this.__get_gitee_files();this.send_a_request()}
@@ -594,7 +623,7 @@ export default {
         }
     },
     __init_read_mode:function(){
-      if(!this.gitee_info.enable)this.read_mode=true;
+      if(!this.gitee_enable)this.read_mode=true;
       const location_parames = {}
       window.location.search.substring(1).split("&").forEach(ele=>{
         let i = ele.split("=");
@@ -1207,6 +1236,13 @@ export default {
           inputPlaceholder:this.file_name,
           inputErrorMessage: '文件格式不正确'
         }).then(({ value }) => {
+          if(this.file_config.files.has(value)){
+            this.$message({
+              type: 'warning',
+              message: '已存在该文件名'
+            });
+            return;
+          }
           this.file_name=value;
           this.tool_bar_list[this.tool_map['file']].title=this.file_name;
           this.$message({
@@ -1232,14 +1268,72 @@ export default {
       this.file_config.loading=true;
       this.gAPI.get_files().then(res=>{
         let tree = res.data.tree;
-        this.file_config.list.splice(0,this.file_config.list.length);
+        this.file_config.groups.splice(0,this.file_config.groups.length);
+        
         for(let i = 0; i < tree.length;i++){
-          let d = tree[i].path.split(".")
-          if(d[d.length-1]=="mb"){
-            this.file_config.list.push(tree[i])
+          if(tree[i].path=="MindBox_file_groups"){
+            this.gAPI.get_file_by_sha(tree[i].sha).then(res=>{
+              this.file_config.groups = JSON.parse(this.__decode(res.data.content))
+            }).catch(()=>{
+              this.file_config.groups.push({
+                name: "files",
+                list: []
+              })
+            }).finally(()=>{
+              let s = new Set();
+              let s_ = new Set();
+              let s_map = {}
+              for(let i = 1; i< this.file_config.groups.length; i++){
+                this.file_config.groups[i].list.forEach((ele)=>{
+                  s.add(ele.path.split('.'+this.file_type)[0])
+                })
+              }
+              this.file_config.groups[0].list.splice(0,this.file_config.groups[0].list.length)
+              for(let i = 0; i < tree.length;i++){
+                let d = tree[i].path.split(".")
+                if(d[d.length-1]==this.file_type ){
+                  let name = tree[i].path.split('.'+this.file_type)[0]
+                  this.file_config.files.add(name)
+                  if(s.has(name)){
+                    s_.add(name);s_map[name] = tree[i]
+                  }
+                  else this.file_config.groups[0].list.push(tree[i]);
+                }
+              }
+              // delete the files that not exist
+              function difference(setA, setB) {
+                  let _difference = new Set(setA);
+                  for (let elem of setB) {
+                      _difference.delete(elem);
+                  }
+                  return _difference;
+              }
+              let d_ = difference(s,s_)
+              for(let i = 1; i< this.file_config.groups.length; i++){
+                this.file_config.groups[i].list.forEach((ele,idx)=>{
+                  let name = ele.path.split('.'+this.file_type)[0]
+                  if(d_.has(name)){
+                    this.file_config.groups[i].list.splice(idx,idx+1)
+                  }
+                  if(s_.has(name)){
+                    for(let j in ele){ele[j] = s_map[name][j]}
+                  }
+                })
+              }
+              this.file_config.loading=false;
+            })
+            break;
           }
         }
-        this.file_config.loading=false;
+        this.file_config.groups.push({name:"Files",list:[]})
+        for(let i = 0; i < tree.length;i++){
+          let d = tree[i].path.split(".")
+          if(d[d.length-1]==this.file_type ){
+              this.file_config.groups[0].list.push(tree[i]);
+          }
+        }
+        this.file_config.loading=false
+        
       }).catch(()=>{
         this.file_config.loading=false;
       })
@@ -1301,7 +1395,7 @@ export default {
                     message: name+" 上传成功！"
                 });
                 this.file_sha = res.data.content.sha
-                this.file_name = res.data.content.name
+                this.file_name = res.data.content.name.split(".mb")[0]
                 resolve(res.data)
               }).catch((err)=>{
                 this.$notify({
@@ -1328,7 +1422,7 @@ export default {
                   });
                   console.log(res.data)
                   this.file_sha = res.data.content.sha
-                  this.file_name = res.data.content.name
+                  this.file_name = res.data.content.name.split(".mb")[0]
                   resolve(res.data)
                 }).catch((err)=>{
                   this.$notify({
@@ -1379,6 +1473,105 @@ export default {
       }).catch(()=>{
         this.pushed_pic_config.loading=false;
       })
+    },
+    __open_file_group:function(idx){
+      
+      if(idx<this.file_config.list.groups.length)
+      {this.file_config.group.idx = idx;this.file_config.group.show = true;}
+      
+    },
+    __upload_file_group:function(){
+      let content = this.__encode(JSON.stringify(this.file_config.groups));
+        let name = "MindBox_file_groups";
+        return new Promise((resolve,reject)=>{
+          if(this.gitee_info.username == "" || this.gitee_info.repos == "" || this.gitee_info.token == "" ){
+              this.$notify({
+                  title: ' 失败',
+                  message: "Gitee 信息有误"
+              });
+              reject(false)
+              return false;
+          }
+        this.file_config.loading = true;
+          if(!this.can_request()){reject(false);return false;}
+          this.send_a_request();
+          this.gAPI.get_file_by_path(name).then(res=>{
+            if(res.data.length == 0){
+              const data = {
+                "content":content
+              }
+              this.gAPI.new_file(name,data).then((res)=>{
+                this.$notify({
+                    title: '成功',
+                    message: name+" 上传成功！"
+                });
+                this.file_config.loading = false;
+                resolve(res.data)
+              }).catch((err)=>{
+                this.$notify({
+                    title: ' 失败',
+                    message: err.data.responseJSON.message
+                });
+                this.file_config.loading = false;
+                reject(err.data)
+              })
+            }
+            else{
+                const data ={
+                  "content":content,
+                  "sha":res.data.sha
+                }
+                this.gAPI.update_file(name,data).then((res)=>{
+                  this.$notify({
+                      title: '成功',
+                      message: name+" 替换成功！"
+                  });
+                  this.file_config.loading = false;
+                  resolve(res.data)
+
+              }).catch((err)=>{
+                this.$notify({
+                  title: '取消',
+                  message: ''
+                });
+                this.file_config.loading = false;
+                reject(err.data)
+              })
+            }
+          }).catch(()=>{
+            this.$notify({
+                title: ' 失败',
+                message: '请求出错'
+            });
+            this.file_config.loading = false;
+          })
+        })
+    },
+     __delete_file_group:function(idx){
+      console.log(idx)
+      this.file_config.groups.splice(idx,idx+1);
+    },
+    __add_file_group:function(){
+      this.$prompt('请输入群组名称', '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          inputPattern: /[\w]+/,
+          inputErrorMessage: '格式不正确'
+        }).then(({ value }) => {
+          this.file_config.groups.push({
+            name:value,
+            list:[]
+          })
+          this.$message({
+            type: 'success',
+            message: '新建群组: ' + value
+          });
+        }).catch(() => {
+          this.$message({
+            type: 'info',
+            message: '取消输入'
+          });       
+        });
     },
     __encode:function(str) {
         // first we use encodeURIComponent to get percent-encoded UTF-8,
@@ -1623,21 +1816,70 @@ export default {
 }
 .file_config_board{
     left: 5px;
+    width: calc(100% - 10px);
     background: rgba(255,255,255,.75);
     box-shadow: 0px 0px 10px rgba(0,0,0,.2);
     -webkit-backdrop-filter: saturate(180%) blur(20px);
     backdrop-filter: saturate(180%) blur(20px);
-        padding: 10px;
+    padding: 10px;
     box-sizing: border-box;
+    .btn{
+      width: 50px;
+      margin: 5px;
+    }
+    .list-group{
+      min-height: 20px;
+    }
+    .file_group_details{
+          position: absolute;
+    height: 50%;
+    width: calc(100% - 20px);
+    min-width: 400px;
+    background: white;
+    z-index: 2;
+    top: calc(20%);
+    left: 10px;
+    margin: auto;
+    padding: 10px;
+    box-sizing: border-box;
+    border-radius: 10px;
+    box-shadow: 0px 5px 20px -3px rgb(0 0 0 / 20%);
+    }
+    .group_item,
     .file_item{
+      width: calc(100% - 10px);
+        float:left;
           height: 50px;
-      line-height: 50px;
-      margin:5px;
+          line-height: 50px;
+          margin:5px;
+          background: white;
+          border-radius: 5px;
+          border: 1px solid #ddd;
+          text-align: left;
+          text-indent: 10px;
+          transition: ease .5s;
+          cursor: pointer;
+          position: relative;
+          overflow: hidden;
+      font-weight: bold;
+          i{
+            position: absolute;
+            font-size: 5rem;
+            color: rgba(0, 0, 0, 0.2);
+            z-index: 0;
+            right: 0;
+        }
+    }
+    .file_item:hover{
+      box-shadow: 0px 2px 20px -5px rgba(0,0,0,.2);
+      border-color: #EEE;
+    }
+    .group_item{
+      width: calc(25% - 12px);
       background: white;
-      border-radius: 5px;
-      border: 1px solid #ddd;
-      text-align: left;
-      text-indent: 10px;
+      height: auto;
+      padding: 5px;
+      box-shadow: 0px 2px 20px -5px rgba(0,0,0,.2);
     }
 
 }

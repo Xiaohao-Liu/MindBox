@@ -1,17 +1,46 @@
 <template>
   <div id="app">
-    <MindMap msg="Welcome to Your Vue.js App"/>
+    <router-view></router-view>
   </div>
-</template>
+</template> 
 
 <script>
 import MindMap from './components/MindMap.vue'
+import Login from './components/Login.vue'
+
+import VueRouter from 'vue-router';
+
+
+const router = new VueRouter({
+  routes: [
+ 
+  { path: '/', component: MindMap, alias:'/mindbox' },
+  { path: '/login', component: Login }
+]})
+
+const {getToken} = require("./api")
+const whiteList = ['/login']
+
+router.beforeEach(async (to, from, next) => {
+  const hasToken = getToken()
+  //检查是否有token
+  if (hasToken) {
+    if (to.path === '/login') {
+      next({ path: '/' })
+    } else {
+      next()
+    }
+  } else {
+    if (whiteList.indexOf(to.path) !== -1) {
+      next()
+    } else {
+      next('/login')
+    }
+  }
+})
 
 export default {
-  name: 'App',
-  components: {
-    MindMap
-  }
+  router
 }
 </script>
 

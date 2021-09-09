@@ -15,11 +15,16 @@
     "cors": "^2.8.5",
     "element-ui": "^2.15.1",
     "express": "^4.17.1",
+    "express-jwt": "^6.1.0",
+    "js-cookie": "^3.0.1",
+    "jsonwebtoken": "^8.5.1",
     "markdown-it": "^12.0.4",
     "markdown-it-highlightjs": "^3.4.0",
     "markdown-it-latex": "^0.2.0",
     "sass-loader": "^10.1.1",
-    "vue": "^2.6.11"
+    "vue": "^2.6.11",
+    "vue-router": "^3.5.2",
+    "vuedraggable": "^2.24.3"
   },
   "devDependencies": {
     "@vue/cli-plugin-babel": "~4.5.0",
