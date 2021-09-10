@@ -2048,9 +2048,12 @@ export default {
       }
     }
   }
-  .file_config_board .file_item{
+  .file_config_board .group_item,.file_item{
     background: #333;
     border:1px solid #444;
+    i{
+      color:rgba(255,255,255,.1);
+    }
   }
   .md_node_note{
         background: #333;
