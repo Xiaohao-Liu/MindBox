@@ -21,7 +21,9 @@
             <div class="header_name">{{item.name}}</div>
           </div>
         </el-header>
-        <el-main style="height:calc(100vh - 60px);padding:0px;" id="antv_container"></el-main>
+        <el-main style="height:calc(100vh - 80px);width:calc(100vw - 20px);border-radius:10px;box-shadow:0px 10px 20px -2px rgba(0,0,0,.2);margin:10px;padding:0px;" id="antv_container"></el-main>
+        <!-- <div id="minimapContainer">
+        </div> -->
         <el-card v-show="pushed_pic_config.show" class="pic_upload_board" v-loading="pushed_pic_config.loadding">
             <img id="pushed_image" :src="pushed_pic_config.base64||pushed_pic_config.url" style="width:100%;"/>  
               <p v-show="pushed_pic_config.base64=='' && pushed_pic_config.url==''  && !pushed_pic_config.pushed" style="text-align:center;">NO IMAGE!</p>   
@@ -44,12 +46,27 @@
           </div>
         </div>
         <div class="config_board node_config_board" v-if="!read_mode&&node_config.show">
-          <div class="board_title">{{node_config.title}}<div class="btn green" v-if="markdown_mode" @click="markdown_mode=false;" style="position:absolute;top:0px;right:10px;">X</div></div>
+          <div class="board_title">
+            <el-row style="margin-top:20px;">
+            <el-col :span="18">
+              编辑
+            </el-col>
+            <el-col :span="6">
+              🔗
+              <el-switch
+              v-model="node_config.can_link"
+              active-color="#13ce66"
+              inactive-color="#ff4949"
+              @change="__change_node_can_link">
+            </el-switch>
+            </el-col>
+          </el-row>
+            <div class="btn green" v-if="markdown_mode" @click="markdown_mode=false;" style="position:absolute;top:0px;right:10px;">X</div></div>
           <el-card>
             <div slot="header" class="clearfix">
               <span>标题</span>
             </div>
-            <el-input v-model="node_config.label" @change="__change_node_label" placeholder="请输入内容"></el-input>
+            <el-input v-model="node_config.title" @change="__change_node_title" placeholder="请输入内容"></el-input>
           </el-card>
           <el-card style="margin-top:10px;">
             <div slot="header" class="clearfix">
@@ -64,61 +81,32 @@
               @change="__change_node_note">
             </el-input>
           </el-card>
-          <div class="color_selector_board">
-            <div class="color_selector">
-            <el-row>
-            <el-col :span="12">
-              填充颜色: 
-            </el-col>
-            <el-col :span="12">
-            <el-color-picker
-              v-model="node_config.fill"
-              :predefine="predefineColors"
-              @change="__change_node_fill">
-            </el-color-picker></el-col></el-row>
+          <!-- <el-card style="margin-top:10px;">
+            <div slot="header" class="clearfix">
+              文字大小
             </div>
-            <div class="color_selector">
-            <el-row>
-            <el-col :span="12">
-              边框颜色: 
-            </el-col>
-            <el-col :span="12"><el-color-picker
-              v-model="node_config.stroke"
-              :predefine="predefineColors"
-              @change="__change_node_stroke">
-            </el-color-picker></el-col></el-row>
+            <el-button-group>
+              <el-button type="primary" icon="el-icon-plus" @click="__change_node_larger"></el-button>
+              <el-button type="primary"><i class="el-icon-minus" @click="__change_node_smaller"></i></el-button>
+            </el-button-group>
+          </el-card> -->
+          <el-card style="margin-top:10px;">
+            <div slot="header" class="clearfix">
+              主题
             </div>
-            <div class="color_selector">
-            <el-row>
-            <el-col :span="12">
-              文字颜色: 
-            </el-col>
-            <el-col :span="12">
-              <el-color-picker
-              v-model="node_config.text_color"
-              :predefine="predefineColors"
-              @change="__change_node_text_color">
-            </el-color-picker>
-            </el-col>
-              </el-row>
-            </div>
-          </div>
-          
-          <el-row>
-            <el-col :span="12">
-              链接
-            </el-col>
-            <el-col :span="12">
-              <el-switch
-              v-model="node_config.can_link"
-              active-color="#13ce66"
-              inactive-color="#ff4949"
-              @change="__change_node_can_link">
-            </el-switch>
-            </el-col>
-          </el-row>
-            
-            <div v-if="selected_node.store.data.idx!=0" class="btn" v-on:click="__del_node">Delete</div>
+            <!-- <el-radio-group v-model="node_config.style" size="mini" :change="__change_node_style">
+              <el-radio-button v-for="style in node_styles" :key="style" :label="style"></el-radio-button>
+            </el-radio-group> -->
+            <el-select v-model="node_config.style" @change="__change_node_style" placeholder="请选择">
+              <el-option
+                v-for="item in node_styles"
+                :key="item"
+                :label="item"
+                :value="item">
+              </el-option>
+            </el-select>
+          </el-card>
+          <div v-if="selected_node.store.data.idx!=0" class="btn" v-on:click="__del_node">Delete</div>
             
         </div>
         <div id="node_note" :class="'md_node_note'+(markdown_mode?' markdown_mode':'')"  v-if="node_config.show&&node_config.note!=''">
@@ -141,32 +129,23 @@
           <div class="btn" v-on:click="__del_edge">Delete</div>
         </div>
         <div class="config_board group_config_board" v-if="!read_mode&&group_config.show">
-          <div class="board_title">{{group_config.title}}</div>
-          <div class="color_selector_board">
-            <div class="color_selector">
-            <el-row>
-            <el-col :span="12">
-              填充颜色: 
-            </el-col>
-            <el-col :span="12">
-            <el-color-picker
-              v-model="node_config.fill"
-              :predefine="predefineColors"
-              @change="__change_node_fill">
-            </el-color-picker></el-col></el-row>
+          <div class="board_title">编辑</div>
+          <el-card style="margin-top:10px;">
+            <div slot="header" class="clearfix">
+              主题
             </div>
-            <div class="color_selector">
-            <el-row>
-            <el-col :span="12">
-              边框颜色: 
-            </el-col>
-            <el-col :span="12"><el-color-picker
-              v-model="node_config.stroke"
-              :predefine="predefineColors"
-              @change="__change_node_stroke">
-            </el-color-picker></el-col></el-row>
-            </div>
-          </div>
+            <!-- <el-radio-group v-model="node_config.style" size="mini" :change="__change_node_style">
+              <el-radio-button v-for="style in node_styles" :key="style" :label="style"></el-radio-button>
+            </el-radio-group> -->
+            <el-select v-model="group_config.style" @change="__change_group_style" placeholder="请选择">
+              <el-option
+                v-for="item in group_styles"
+                :key="item"
+                :label="item"
+                :value="item">
+              </el-option>
+            </el-select>
+          </el-card>
           <div class="btn" v-on:click="__del_group">Delete</div>
         </div>
         <div class="config_board image_config_board" v-if="!read_mode&&image_config.show">
@@ -188,15 +167,15 @@
           </div>
           <div class="group_item" v-for="group, idx in file_config.groups" :key="group.name">
             <p style="font-size:1.2rem;font-weight:bold;line-height:20px;margin:5px 0px;">{{group.name}}</p>
-            <div class="btn red" style="width:calc(100% - 30px);" v-show="group.list.length<=0" v-on:click="__delete_file_group(idx)">Delete Group</div>
+            <div class="btn red" style="width:100%;" v-show="group.list.length<=0" v-on:click="__delete_file_group(idx)">Delete Group</div>
             <draggable
               class="list-group"
               :list="group.list"
               group="files"
             >
               <div class="file_item list-group-item" v-for="item in group.list" :key="item.path">
-                <div  style="width:calc(100% - 30px);float:right;white-space: nowrap;overflow: hidden;text-overflow: ellipsis;"  v-on:click="__load_gitee_file(item.path,item.sha);">
-                  <i class="el-icon-document"/>{{item.path}}
+                <div  style="width:100%;float:right;white-space: nowrap;overflow: hidden;text-overflow: ellipsis;"  v-on:click="__load_gitee_file(item.path,item.sha);">
+                  <i class="el-icon-document"/>{{item.path.split("."+file_type)[0]}}
                 </div>
               </div>
             </draggable>
@@ -234,9 +213,7 @@ import { Graph, DataUri} from '@antv/x6';
 import draggable from "vuedraggable";
 const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
-Graph.registerEdge(
-  'edge',
-  {
+const default_edge = {
     inherit: 'edge',
     attrs: {
       line: {
@@ -250,7 +227,7 @@ Graph.registerEdge(
         startDirections: ['bottom','left','right'],
         endDirections: ['top'],
       },
-  },
+    },
     defaultLabel: {
       markup: [
         {
@@ -265,7 +242,7 @@ Graph.registerEdge(
       attrs: {
         label: {
           fill: 'trsnaparent',
-          fontSize: 14,
+          fontSize: 12,
           textAnchor: 'middle',
           textVerticalAnchor: 'middle',
           pointerEvents: 'none',
@@ -292,9 +269,60 @@ Graph.registerEdge(
       },
       
     },
-  },
-  true,
-);
+  }
+
+Graph.registerEdge('edge',default_edge,true);
+
+// register html component
+Graph.registerHTMLComponent('first', (node) => {
+  let d = node.getData()
+  const wrap = document.createElement('div')
+  wrap.innerHTML = "<div class='inner_text' id='"+(d['id']+"box")+"'><div class='title'>"+d['title']+"</div></div>"
+  wrap.className = "node first "+ d['style']
+  wrap.id = d['id']
+  return wrap
+})
+Graph.registerHTMLComponent('second', (node) => {
+  let d = node.getData()
+  const wrap = document.createElement('div')
+  wrap.innerHTML = "<div class='inner_text'  id='"+(d['id']+"box")+"'><div class='title'>"+d['title']+"</div></div>"
+  wrap.className = "node second "+ d['style']
+  wrap.id = d['id']
+  return wrap
+})
+Graph.registerHTMLComponent('note', (node) => {
+  let d = node.getData()
+  const wrap = document.createElement('div')
+  wrap.innerHTML = "<div class='inner_text'  id='"+(d['id']+"box")+"'><div class='title'>"+d['title']+"</div><div class='content'>"+md.render(d['note'])+"</div></div>"
+  wrap.className = "node note "+ d['style']
+  wrap.id = d['id']
+  return wrap
+})
+Graph.registerHTMLComponent('others', (node) => {
+  let d = node.getData()
+  const wrap = document.createElement('div')
+  wrap.innerHTML = "<div class='inner_text'  id='"+(d['id']+"box")+"'><div class='title'>"+d['title']+"</div></div>"
+  wrap.className = "node others "+ d['style']
+  wrap.id = d['id']
+  return wrap
+})
+Graph.registerHTMLComponent('group', (node) => {
+  let d = node.getData()
+  const wrap = document.createElement('div')
+  wrap.innerHTML = "<div class='inner_text'  id='"+(d['id']+"box")+"'></div>"
+  wrap.className = "node group "+ d['style']
+  wrap.id = d['id']
+  return wrap
+})
+Graph.registerHTMLComponent('image', (node) => {
+  let d = node.getData()
+  const wrap = document.createElement('img')
+  wrap.className = "node image "+ d['style']
+  wrap.src = d['src']
+  wrap.id = d['id']
+  return wrap
+})
+
 import node_option from '../node_option';
 import {getGiteeInfo, GiteeAPI, removeToken} from "../api";
 import "../assets/iconfont/iconfont.css"
@@ -336,6 +364,8 @@ export default {
       predefineColors:["#eeeeee","#ffffff","#000000","#b39ddb","#f44336","#009688","#0d47a1"],
       request_lock:false,
       zoom:0,
+      node_styles:['plain','pure-green','pure-blue','pure-yellow','pure-red', 'sticky', 'emergency'],
+      group_styles:['plain','pure-green','pure-blue','pure-yellow','pure-red', 'emergency'],
       tool_bar_list:[
         {
           name:"Xiaohao Liu",
@@ -698,6 +728,13 @@ export default {
         resizing: {
           enabled: this.read_mode?false:true,
         },
+        // minimap: {
+        //   enabled: true,
+        //   scalable: true,
+        //   width:200,
+        //   height:200,
+        //   container: document.getElementById("minimapContainer"),
+        // },
         keyboard: {
           enabled: this.read_mode?false:true,
           format(key) { 
@@ -725,21 +762,9 @@ export default {
           allowPort: false,
           highlight: true,
           snap:true,
+          snapline: true,
           createEdge:() =>{
-          return this.graph.createEdge({
-            attrs: {
-              line: {
-                strokeWidth: 2,
-                connector: { name: 'rounded' },
-                targetMarker: {
-                  name: 'block',
-                  args: {
-                    size: '6',
-                  },
-                },
-              },
-            },
-          })
+          return this.graph.createEdge(default_edge)
         },
         },
         panning:true,
@@ -771,12 +796,15 @@ export default {
       this.first_load=false;
       this.online_file=true;
     },
+    generate_id:function(node_type){
+      return node_type + String(new Date().getTime())
+    },
     __init_a_blank_project:function(){
       this.graph.fromJSON({})
-      // let center_node_class = new node_option['first'].class();
-      // let center_node_op = node_option["first"];
-      // center_node_op.html = center_node_class.node();
-      // center_node_op.data.obj = center_node_class;
+      let s_d ={};
+      for(let k in node_option['first'])s_d[k] = node_option['first'][k]
+      s_d["data"]["id"] = this.generate_id('first')
+      this.graph.addNode(s_d)
       this.graph.centerContent();
       this.tool_bar_list[this.tool_map['file']].title=this.file_name;
       this.file_name = "untitled";
@@ -785,96 +813,96 @@ export default {
       this.online_file=false;
       document.getElementsByTagName('title')[0].innerText = "new file";
     },
-    __extract_graph_json:function(){
-        const data={nodes:[],edges:[]};
-        const jsondata = this.graph.toJSON();
-        const ignore_data={nodes:[]}
-        const children_data = {nodes:[]}
-        const children_set = new Set();
-        jsondata.cells.forEach(item=>{
-          if("children" in item && item.children.length >0){
-            item.children.forEach(c=>{children_set.add(c)})
-          }
-        })
-        jsondata.cells.forEach(item=>{
-            if(item.ignore_layout == true){
-              let d = {};
-              for(let k in item)d[k]=item[k];
-              ignore_data.nodes.push(d)
-              return
-            }
-            if(children_set.has(item.id)){
-              if(item.shape!="edge"){
-                let d = {};
-                for(let k in item)d[k]=item[k];
-                children_data.nodes.push(d)
-                return
-              }
-            }
-            if(item.shape=="rect"){
-                let d = {};
-                for(let k in item)d[k]=item[k];
-                d.width = d.size.width;
-                d.height = d.size.height;
-                delete d.size;
-                delete d.position;
-                data.nodes.push(d)
-            }else{
-                let d = {};
-                for(let k in item)d[k]=item[k];
-                d.source = d.source.cell
-                d.target = d.target.cell
-                data.edges.push(d)
-            }
-        })
-        return {"data":data,"ignore":ignore_data,"children":children_data};
-    },
     __enable:function(name){
       this.tool_bar_list[this.tool_map[name]].enable=true;
     },
     __disable:function(name){
       this.tool_bar_list[this.tool_map[name]].enable=false;
     },
-    __change_node_label:function(){
-      
-      
-      this.selected_node.attr({text:{text:this.node_config.label}});
-      let w = this.getElementsByAttr("g","data-cell-id", this.selected_node.id).getElementsByTagName("text")[0].getBBox().width + 20
+    // __change_node_larger:function(){
+    //   let d = this.selected_node.getData()
+    //   if(d.type=="others"){
+    //     this.selected_node.updateData({type:"second"});
+    //     let dom = document.getElementById(this.selected_node.getData()['id'])
+    //     let classes = dom.className.split(' ')
+    //     dom.className = [classes[0],"second", classes[2]].join(" ")
+    //   }else if(d.type=="second"){
+    //     this.selected_node.updateData({type:"first"});
+    //     let dom = document.getElementById(this.selected_node.getData()['id'])
+    //     let classes = dom.className.split(' ')
+    //     dom.className = [classes[0],"first", classes[2]].join(" ")
+    //   }
+    // },
+    // __change_node_smaller:function(){
+    //   let d = this.selected_node.getData()
+    //   if(d.type=="first"){
+    //     this.selected_node.updateData({type:"second"});
+    //     let dom = document.getElementById(this.selected_node.getData()['id'])
+    //     let classes = dom.className.split(' ')
+    //     dom.className = [classes[0],"second", classes[2]].join(" ")
+    //   }else if(d.type=="second"){
+    //     this.selected_node.updateData({type:"others"});
+    //     let dom = document.getElementById(this.selected_node.getData()['id'])
+    //     let classes = dom.className.split(' ')
+    //     dom.className = [classes[0],"others", classes[2]].join(" ")
+    //   }
+    // },
+    __change_node_title:function(){
+      this.selected_node.updateData({title:this.node_config.title});
+      let dom = document.getElementById(this.selected_node.getData()['id']+"box").getElementsByClassName('title')[0]
+      dom.innerHTML = this.markdown.render(this.node_config.title);
+      let w = document.getElementById(this.selected_node.getData()['id']).offsetWidth + 20
       let size = this.selected_node.getProp("size")
-
       this.selected_node.setProp("size",{width:w,height:size.height})
     },
     __change_node_can_link:function(){
-      this.selected_node && this.selected_node.attr('body/magnet', this.node_config.can_link)
+      let dom = document.getElementById(this.selected_node.getData()['id']+"box")
+      this.selected_node && dom.setAttribute('magnet', this.node_config.can_link)
     },
     __change_node_note:function(){
       this.selected_node.updateData({note:this.node_config.note})
+      if(this.selected_node.getData()['type']=="note"){
+          let dom = document.getElementById(this.selected_node.getData()['id']+"box").getElementsByClassName('content')[0]
+          dom.innerHTML = this.markdown.render(this.node_config.note)
+      }
     },
-    __change_node_fill:function(){
-      this.selected_node.attr({body:{fill:this.node_config.fill}})
-      let rgb = this.colorRgb(this.node_config.fill).substring(4)
-      rgb = rgb.substring(0,rgb.length-1).split(",");
-      let strokergb=[]
-      rgb.forEach(c=>{
-        c = parseInt(c);
-        if (c == 255){
-          c=0;}
-        else{
-          c*=1.4;c=parseInt(c);}
-        if (c > 255){
-          c=255;}
-          strokergb.push(c)
-      })
-      strokergb ="rgb("+ strokergb.join(",")+")";
-      this.node_config.stroke = this.colorHex(strokergb);
-      this.selected_node.attr({body:{stroke:this.node_config.stroke}})
+    __change_node_style:function(){
+      this.selected_node.updateData({style:this.node_config.style})
+      let dom = document.getElementById(this.selected_node.getData()['id'])
+      let classes = dom.className.split(' ')
+      dom.className = [classes[0],classes[1], this.node_config.style].join(" ")
     },
-    __change_node_stroke:function(){
-      this.selected_node.attr({body:{stroke:this.node_config.stroke}})
+    __change_group_style:function(){
+      this.selected_node.updateData({style:this.group_config.style})
+      let dom = document.getElementById(this.selected_node.getData()['id'])
+      let classes = dom.className.split(' ')
+      dom.className = [classes[0],classes[1], this.group_config.style].join(" ")
     },
-    __change_node_text_color:function(){
-      this.selected_node.attr({text:{fill:this.node_config.text_color}})
-    },
+    // __change_node_fill:function(){
+    //   this.selected_node.attr({body:{fill:this.node_config.fill}})
+    //   let rgb = this.colorRgb(this.node_config.fill).substring(4)
+    //   rgb = rgb.substring(0,rgb.length-1).split(",");
+    //   let strokergb=[]
+    //   rgb.forEach(c=>{
+    //     c = parseInt(c);
+    //     if (c == 255){
+    //       c=0;}
+    //     else{
+    //       c*=1.4;c=parseInt(c);}
+    //     if (c > 255){
+    //       c=255;}
+    //       strokergb.push(c)
+    //   })
+    //   strokergb ="rgb("+ strokergb.join(",")+")";
+    //   this.node_config.stroke = this.colorHex(strokergb);
+    //   this.selected_node.attr({body:{stroke:this.node_config.stroke}})
+    // },
+    // __change_node_stroke:function(){
+    //   this.selected_node.attr({body:{stroke:this.node_config.stroke}})
+    // },
+    // __change_node_text_color:function(){
+    //   this.selected_node.attr({text:{fill:this.node_config.text_color}})
+    // },
     __change_edge_label:function(){
       if(this.edge_config.label==''){
         this.selected_edge.setLabels({attrs:{text:{text:''}}})
@@ -888,7 +916,8 @@ export default {
     __add_events:function(){
       this.graph.on('node:selected', ( args) => { 
           const cells = this.graph.getSelectedCells();
-          this.selected_node = args.node;
+          this.selected_node = args.node
+          let node_data = this.selected_node.getData()
           if(cells.length >1){
             // group
             this.__enable("group");
@@ -900,23 +929,22 @@ export default {
             this.image_config.show = false;
             return false;
           }
-          if(this.selected_node.shape=="image"){
+          if(node_data.type=="image"){
             this.image_config.show = true;
-            this.image_config.url = this.selected_node.attr("image")["xlink:href"];
+            this.image_config.url = node_data.src;
             return false;
           }
-          this.node_config.label = this.selected_node.attr("text").text;
-          this.node_config.fill = this.selected_node.attr("body").fill;
-          this.node_config.stroke = this.selected_node.attr("body").stroke;
-          this.node_config.text_color = this.selected_node.attr("text").fill;
-          this.node_config.can_link = this.selected_node.attr('body/magnet');
-          if(this.selected_node.store.data.idx==4){
+          if(node_data.type =="group"){
             this.group_config.show=true;
-            this.node_config.show=false;
-            this.edge_config.show=false;
-            this.image_config.show = false;
+            this.group_config.style = node_data.style
+            
             return false;
           }
+          this.node_config = node_data
+          if(document.getElementById(node_data['id']+'box').getAttribute('magnet')=="true")this.node_config.can_link = true 
+          else this.node_config.can_link = false
+          console.log(node_data)
+          
           this.node_config.show=true;
           this.edge_config.show=false;
           this.group_config.show=false;
@@ -951,6 +979,7 @@ export default {
         if (args.isNew) {
         const parentid = args.edge.store.data.source.cell;
         const childid = args.edge.store.data.target.cell;
+        console.log(this.graph.getCell(parentid))
         this.graph.getCell(childid).setData({parent:parentid})
         }
       })
@@ -1071,6 +1100,7 @@ export default {
     __tool_add_note:function(){
       let d = {};
       for(let k in node_option['note'])d[k] = node_option['note'][k];
+      d['data']['id'] = this.generate_id('note')
       let p = this.graph.pageToLocal(window.innerWidth/2,window.innerHeight/2);
       d.x = p.x;
       d.y = p.y;
@@ -1082,12 +1112,13 @@ export default {
     __tool_add_pic_2:function(){
       let d = {};
       for(let k in node_option['image'])d[k] = node_option['image'][k];
+      d['data']['id'] = this.generate_id('image')
       let p = this.graph.pageToLocal(window.innerWidth/2,window.innerHeight/2);
       d.x = p.x;
       d.y = p.y;
       d.width = document.getElementById("pushed_image").offsetWidth;
       d.height = document.getElementById("pushed_image").offsetHeight;
-      d.imageUrl = this.pushed_pic_config.url;
+      d['data']['src'] = this.pushed_pic_config.url;
       this.graph.addNode(d)
       this.pushed_pic_config.pushed = false;
       this.pushed_pic_config.show = false;
@@ -1101,8 +1132,10 @@ export default {
         let s_d ={};
         if(idx==0){
           for(let k in node_option['second'])s_d[k] = node_option['second'][k]
+          s_d["data"]["id"] = this.generate_id('second')
         }else {
           for(let k in node_option['others'])s_d[k] = node_option['others'][k]
+          s_d["data"]["id"] = this.generate_id('others')
         }
         s_d.parent=this.selected_node.id;
 
@@ -1125,8 +1158,10 @@ export default {
         if(idx==0)return;
         if(idx==1){
           for(let k in node_option['second'])s_d[k] = node_option['second'][k]
+          s_d["data"]["id"] = this.generate_id('second')
         }else {
           for(let k in node_option['others'])s_d[k] = node_option['others'][k]
+          s_d["data"]["id"] = this.generate_id('others')
         }
         s_d.parent=this.selected_node.getData().parent;
         let t_node = this.graph.addNode(s_d);
@@ -1144,6 +1179,7 @@ export default {
     __tool_add_group:function(){
         const cells = this.graph.getSelectedCells();
         const parent_option = node_option["group"];
+        parent_option['data']['id'] = this.generate_id('group')
         let padding = 10;
         if(cells.length){
           let x =0, y = 0, height = 0, width = 0;
@@ -1276,7 +1312,7 @@ export default {
               this.file_config.groups = JSON.parse(this.__decode(res.data.content))
             }).catch(()=>{
               this.file_config.groups.push({
-                name: "files",
+                name: "Files",
                 list: []
               })
             }).finally(()=>{
@@ -1847,7 +1883,7 @@ export default {
     }
     .group_item,
     .file_item{
-      width: calc(100% - 10px);
+      width: calc(25% - 15px);
         float:left;
           height: 50px;
           line-height: 50px;
@@ -1857,7 +1893,7 @@ export default {
           border: 1px solid #ddd;
           text-align: left;
           text-indent: 10px;
-          transition: ease .5s;
+          transition: ease .2s;
           cursor: pointer;
           position: relative;
           overflow: hidden;
@@ -1875,7 +1911,7 @@ export default {
       border-color: #EEE;
     }
     .group_item{
-      width: calc(25% - 12px);
+      width: calc(100% - 20px);
       background: white;
       height: auto;
       padding: 5px;
@@ -1993,6 +2029,9 @@ export default {
   background:#333 !important;
   #main{
     background:#222 !important;
+  }
+  #antv_container{
+    background:#333 !important;
   }
   .header_btn{
     background: #444;
@@ -2155,5 +2194,158 @@ tbody td:nth-child(1){
     border-right:1px solid white !important;
 }
 }
+}
+.node{
+    background: white;
+    height: 100%;
+    width: 100%;
+    text-align: center;
+    // border-radius: 1em;
+    box-shadow: 0px 10px 20px -2px rgba(0,0,0,.1);
+    
+    margin: -1px;
+    box-sizing: border-box;
+    font-weight: bold;
+}
+.node.first{
+  padding:10px;
+  border-radius: 10px;
+  .inner_text{
+    line-height: 40px;
+    font-size: 18px;
+    p{margin:0px;}
+  }
+}
+.node.second{
+  padding:5px;
+  border-radius: 8px;
+  .inner_text{
+    line-height: 30px;
+    font-size: 16px;
+    p{margin:0px;}
+  }
+}
+.node.others{
+  padding:0px;
+  border-radius: 5px;
+  .inner_text{
+    line-height: 20px;
+    font-size: 14px;
+    p{margin:0px;}
+  }
+}
+.node.note{
+  padding:5px;
+  border-radius: 5px;
+  .inner_text{
+    line-height: 20px;
+    font-size: 14px;
+    .title{
+      font-size: 18px;
+    }
+    .content{
+      text-align:justify;
+      padding:10px;
+    }
+    p{margin:0px;}
+  }
+}
+.node.image{
+  border-radius: 10px;
+}
+.node.group{
+  border-radius: 10px;
+  border: 2px dashed;
+}
+// styles
+.node.plain{
+  border: 2px solid black;
+  background: white;
+  color: black;
+}
+.node.group.plain{
+  border: 2px dashed;
+}
+.node.pure-green{
+  border: 2px solid #c8e6c9;
+  background: #c8e6c9;
+  color: black;
+}
+.node.pure-blue{
+  border: 2px solid #bbdefb;
+  background: #bbdefb;
+  color: black;
+}
+.node.pure-yellow{
+  border: 2px solid #fff59d;
+  background: #fff59d;
+  color: black;
+}
+.node.pure-red{
+  border: 2px solid #ffcdd2;
+  background: #ffcdd2;
+  color: black;
+}
+.node.sticky {
+  padding-top: 10px;
+	background-color: #fff59d;
+	border-bottom-left-radius: 20px 500px;
+	border-bottom-right-radius: 500px 30px;
+	border-top-right-radius: 5px 100px;
+	background: 
+		-webkit-gradient(
+			linear,
+			left top, left bottom,
+			from(#81cbbc),
+			color-stop(2%, #fff59d)
+		);
+	position: relative;
+}
+.node.sticky:after {
+	width: 40px;
+	height: 15px;
+	content: " ";
+	margin-left: -40px;
+	border: 1px solid rgba(200, 200, 200, .8);
+	background: rgba(254, 254, 254, .6);
+	box-shadow: 0px 0 3px rgba(0, 0, 0, 0.1);
+  transform: rotate(-5deg);
+	position: absolute;
+	left: 50%;
+	top: -5px;
+}
+.node.emergency{
+  border:2px solid black;
+}
+.node.group.emergency{
+  border: 2px dashed;
+}
+.node.emergency:after{
+  content: "❗️";
+    position: absolute;
+    top: -10px;
+    right: 0px;
+    font-size: 1.5em;
+    transform: rotate(25deg);
+    text-shadow: 2px 2px 10px #f50000;
+}
+.dark_mode{
+  // styles
+  .node.plain{
+    border:2px solid #444;
+    background: black;
+    color: white;
+  }
+  .node.group.plain{
+    border:2px dashed white;
+  }
+  .node.emergency{
+    border:2px solid #444;
+    background: black;
+    color: white;
+  }
+  .node.group.emergency{
+    border:2px dashed white;
+  }
 }
 </style>

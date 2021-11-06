@@ -1,24 +1,15 @@
 
-
 module.exports={
     "first":{
         width: 120,
         height: 60,
-        attrs: {
-            body: {
-                stroke: 'black',
-                fill: 'white',
-                rx: 10,
-                ry: 10,
-            },
-            text:{
-                text:"中心主题",
-                fill:'black',
-                fontSize: "18",
-                fontWeight: "bold"
-            }
-        },
+        shape: 'html',
+        html: "first",
         data:{
+            type:"first",
+            id:"",
+            title:"Text",
+            style:"plain",
             note:""
         },
         zIndex: 10,
@@ -28,20 +19,13 @@ module.exports={
     "second":{
         width: 100,
         height: 40,
-        attrs: {
-            body: {
-            stroke: 'black',
-            fill: 'white',
-            rx: 10,
-            ry: 10,
-            },
-            text:{
-                text:"分支主题",
-                fill:'black',
-                fontSize: "16",
-            }
-        },
+        shape: 'html',
+        html: "second",
         data:{
+            type:"second",
+            id:"",
+            title:"Text",
+            style:"plain",
             note:""
         },
         idx:1,
@@ -51,19 +35,13 @@ module.exports={
     "others":{
         width: 80,
         height: 20,
-        attrs: {
-            body: {
-            stroke: 'black',
-            fill: 'white',
-            rx: 5,
-            ry: 5,
-            },
-            text:{
-                text:"子主题",
-                fill:'black',
-            }
-        },
+        shape: 'html',
+        html: "others",
         data:{
+            type:"others",
+            id:"",
+            title:"Text",
+            style:"plain",
             note:""
         },
         idx:2,
@@ -73,20 +51,13 @@ module.exports={
     "note":{
         width: 100,
         height: 40,
-        attrs: {
-            body: {
-            stroke: 'black',
-            fill: 'white',
-            rx: 5,
-            ry: 5,
-            },
-            text:{
-                text:"注释",
-                fill:'black',
-                fontSize: "14",
-            }
-        },
+        shape: 'html',
+        html: "note",
         data:{
+            type:"note",
+            id:"",
+            title:"Note",
+            style:"plain",
             note:""
         },
         zIndex: 10,
@@ -107,27 +78,27 @@ module.exports={
         width: 100,
         height: 40,
         label:"",
-        attrs: {
-            body: {
-                stroke: 'black',
-                fill: '#eee',
-                strokeDasharray:5,
-                rx: 5,
-                ry: 5,
-            },
-        },
+        shape: 'html',
+        html: "group",
         data:{
-            note:"",
+            type:"group",
+            id:"",
+            title:"",
+            style:"plain",
+            note:""
         },
         zIndex: 1,
         idx:4,
     },
     "image":{
-        shape: 'image',
-        x:null,
-        y:null,
-        height:null,
-        width:null,
-        imageUrl:null,
+        width: 100,
+        height: 100,
+        shape: 'html',
+        html: "image",
+        data:{
+            type:"image",
+            id:"",
+            src:"",
+        },
     }
 }
