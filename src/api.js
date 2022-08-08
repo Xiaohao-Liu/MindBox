@@ -84,8 +84,10 @@ function removeToken() {
   return Cookies.remove(TokenKey)
 }
 
+const baseURL = "http://localhost:80"
+
 const service = axios.create({
-  baseURL: "",
+  baseURL: baseURL,
   timeout: 5000
 })
 //请求拦截器
@@ -132,6 +134,7 @@ async function getGiteeInfo(){
     })
 }
 
+
 async function checkFirst(){
   return service({
       method:"get",
@@ -163,7 +166,8 @@ module.exports={
     getGiteeInfo:getGiteeInfo,
     setToken: setToken,
     getToken: getToken,
-    removeToken: removeToken
+    removeToken: removeToken,
+    baseURL: baseURL
 }
 // const gitee_info = require("./index")
 

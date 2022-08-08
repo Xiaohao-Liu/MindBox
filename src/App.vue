@@ -13,8 +13,8 @@ import VueRouter from 'vue-router';
 
 const router = new VueRouter({
   routes: [
- 
-  { path: '/', component: MindMap, alias:'/mindbox' },
+    
+  { path: '/', component: MindMap, alias:['/mindbox','/read'] },
   { path: '/login', component: Login }
 ]})
 
@@ -23,18 +23,22 @@ const whiteList = ['/login']
 
 router.beforeEach(async (to, from, next) => {
   const hasToken = getToken()
-  //检查是否有token
-  if (hasToken) {
-    if (to.path === '/login') {
-      next({ path: '/' })
+  if(to.path === '/read'){
+    next()
+  }else{
+    //检查是否有token
+    if (hasToken) {
+      if (to.path === '/login') {
+        next({ path: '/' })
+      } else {
+        next()
+      }
     } else {
-      next()
-    }
-  } else {
-    if (whiteList.indexOf(to.path) !== -1) {
-      next()
-    } else {
-      next('/login')
+      if (whiteList.indexOf(to.path) !== -1) {
+        next()
+      } else {
+        next('/login')
+      }
     }
   }
 })
