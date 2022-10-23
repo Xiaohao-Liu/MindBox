@@ -24,3 +24,4 @@ pnpm-debug.log*
 
 .secretKey
 .pwd
+start2.json
