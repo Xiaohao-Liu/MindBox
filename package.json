@@ -10,6 +10,7 @@
   "dependencies": {
     "@antv/layout": "^0.1.10",
     "@antv/x6": "^1.12.27",
+    "@vueuse/core": "^9.3.1",
     "axios": "^0.21.1",
     "body-parser": "^1.20.1",
     "core-js": "^3.6.5",

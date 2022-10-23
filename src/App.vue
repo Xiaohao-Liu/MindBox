@@ -1,10 +1,12 @@
 <template>
   <div id="app">
+    <full-screen></full-screen>
     <router-view></router-view>
   </div>
 </template> 
 
 <script>
+import FullScreen from './components/FullScreen.vue';
 import MindMap from './components/MindMap.vue'
 import Login from './components/Login.vue'
 
@@ -43,7 +45,8 @@ router.beforeEach(async (to, from, next) => {
 })
 
 export default {
-  router
+  router,
+  components:{FullScreen}
 }
 </script>
 
