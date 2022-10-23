@@ -1,6 +1,6 @@
 
 # mindbox 
-![](public/ic_launcher.png)
+![](public/logo_mindbox.png)
 
 A MindMap application powered by **vue**, **antvis/X6** and **element**. This app is a pure web page without any backend for data interactions. Thus, it's **convenient** to build your own mindmap app.
 
@@ -17,37 +17,9 @@ Inspired by **XMind**, I designed the MindBox with many necessary and useful Fea
 - dark mode
 - ...
 
-Here is a [demo](http://wykxldz.gitee.io/mindbox/?u=WYKXLDZ&r=MindBoxCollection&s=3746793b39d93d69f05aaac9ac39035ec3ae5544&n=Demo.mb) without gitee storage.
+Here is a [demo](http://wykxldz.gitee.io/mindbox/#/read?u=WYKXLDZ&r=MindBoxCollection&s=8f35c84f195d8dea7be1375e5453999c2553ebd4&n=Demo.mb&k=undefined) with gitee storage.
+
+And you can use this app online by type your own gitee repository through [MindBox](http://wykxldz.gitee.io/mindbox).
 
 Enjoy it!
-
-## Deploy
-For the security, I add a simple server that can valid your identification and send the private gitee/github info to you.
-
-First, set a json of settings of `pm2`:
-```json
-// start.json
-{
-	"apps":[
-		{
-		"name":"MarkBox",
-		"script":"/opt/MindBox/server.js", 
-		"env":{
-			"GITEE_USER":"XiaoHao_Liu", 
-			"GITEE_TOKEN":"xxxxxx", 
-			"MINDBOX_REPO":"xxxxxx", 
-			"MINDBOX_GITEE_ENABLE":1 
-			}
-		}
-	]
-}
-```
-Next, start your server by pm2:
-```shell
-pm2 start start.json
-
-#│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
-#├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
-#│ 1  │ MarkBox            │ fork     │ 0    │ online    │ 0%       │ 41.8mb
-```
 
