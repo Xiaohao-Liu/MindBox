@@ -71,17 +71,15 @@ GiteeAPI.prototype = {
 
 
 
-const Cookies =require('js-cookie')
-
-const TokenKey = 'User-Token'
+const TokenKey = 'Gitee-info'
 function getToken() {
-  return Cookies.get(TokenKey)
+  return JSON.parse(localStorage.getItem(TokenKey))
 }
 function setToken(token) {
-  return Cookies.set(TokenKey, token)
+  return localStorage.setItem(TokenKey, JSON.stringify(token))
 }
 function removeToken() {
-  return Cookies.remove(TokenKey)
+  return localStorage.removeItem(TokenKey)
 }
 
 const baseURL = "http://localhost:80"

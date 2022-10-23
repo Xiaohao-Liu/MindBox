@@ -3,6 +3,7 @@ var express = require('express');
 var cors = require('cors');
 var app = express();
 var bodyParser = require('body-parser');
+var axios = require('axios')
 
 var { jwtAuth } = require("./jwt")
 const jwt = require('jsonwebtoken')
@@ -10,7 +11,6 @@ const { PRIVATE_KEY, JWT_EXPIRED } = require('./constant')
 const md5 = require("./md5")
 
 const fs = require("fs");
-
 var dirname = process.cwd()
 
 // set static file director
@@ -85,7 +85,15 @@ app.get('/api/giteeinfo', jwtAuth,  function (req, res) {
     // console.log(response)
 })
 
-
+app.get('/api/pic_file',  async function (req, res) {
+    axios.get(req.query.url, {
+    responseType: 'arraybuffer', //这里只能是arraybuffer，不能是json等其他项，blob也不行
+    }).then(response => {
+    res.set(response.headers) //把整个的响应头塞入更优雅一些
+    res.end(response.data.toString('binary'), 'binary') //这句是关键，有两次的二进制转换
+    })
+    // console.log(response)
+})
 
 var server = app.listen(80, function () {
  

@@ -12,7 +12,7 @@
           v-show="item.show"
           >
             <div class="header_btn" v-on:click="(item.enable&&item.type!='btn'&&item.click())">
-              <i :class="item.icon"/> {{item.title}}
+              <i :class="item.icon" v-text="item.title"/> 
               <el-switch v-if="item.type=='btn'"
                 v-model="item.enable"
                 active-color="#13ce66"
@@ -25,8 +25,7 @@
         <!-- </el-header> -->
         </div>
         <el-main style="height:100vh;width:100vw;border-radius:0px;padding:0px;" id="antv_container"></el-main>
-        <!-- <div id="minimapContainer">
-        </div> -->
+        <!-- <div id="antv_minimap"></div> -->
         <div class="big_board" v-show="pushed_pic_config.show" >
           <div class="behind_" @click="pushed_pic_config.show=false"></div>
           <el-card class="edit_board" v-loading="pushed_pic_config.loading">
@@ -303,7 +302,7 @@ const CryptoJS = require("crypto-js");
 
 import node_option from '../node_option';
 import chart_option from '../chart_option';
-import {baseURL, getGiteeInfo, GiteeAPI, removeToken} from "../api";
+import { getToken, GiteeAPI, removeToken} from "../api";
 import "../assets/iconfont/iconfont.css"
 
 // import markdownIt from 'markdown-it'
@@ -479,7 +478,7 @@ const ports={
 
 Graph.registerEdge('edge',default_edge,true);
 
-const imageProxy = baseURL + "/api/pic_file?url=" 
+const imageProxy = "" //baseURL + "/api/pic_file?url=" 
 
 // register html component
 Graph.registerHTMLComponent('first', (node) => {
@@ -600,7 +599,7 @@ export default {
           style:"",
           enable:true,
           show:true,
-          icon:"",
+          icon:"mindbox-logo",
           title:"MindBox",
           click:()=>{this.index()},
         },
@@ -682,7 +681,7 @@ export default {
           show:true,
           icon:"el-icon-news",
           title:"",
-          click:()=>{this.__tool_add_anchor()},
+          click:()=>{this.__tool_add_anchor()}, // 8
         },
         {
           name:"undo",
@@ -732,7 +731,7 @@ export default {
           show:true,
           icon:"iconfont icon-zoomin",
           title:"",
-          click:()=>{this.zoom+=0.2;this.graph.zoom(0.2);},
+          click:()=>{this.graph.zoomTo(this.graph.zoom()*1.2)},
         },
         {
           name:"reset zoom",
@@ -742,7 +741,7 @@ export default {
           show:true,
           icon:"iconfont icon-zoom",
           title:"",
-          click:()=>{this.graph.zoom(-this.zoom);this.zoom=0;},
+          click:()=>{this.graph.zoomTo(1);},
         },
         {
           name:"zoom down",
@@ -752,7 +751,7 @@ export default {
           show:true,
           icon:"iconfont icon-zoomout",
           title:"",
-          click:()=>{this.zoom-=0.2;this.graph.zoom(-0.2);},
+          click:()=>{this.graph.zoomTo(this.graph.zoom()*0.8);},
         },
         {
           name:"dark mode",
@@ -773,7 +772,7 @@ export default {
           show:true,
           icon:"el-icon-place",
           title:"",
-          click:()=>{this.position_mode = true;},
+          click:()=>{this.position_mode = true;}, // 17
         },
         {
           name:"logout",
@@ -881,24 +880,20 @@ export default {
     }
   },
   mounted:function(){
-    getGiteeInfo().then(res=>{
-      this.server_mode = true;
-      this.gitee_info = res;
-      this.gitee_enable = this.gitee_info.enable;
-      console.log(this.gitee_info);
-    }).catch(err=>{
-      console.log(err)
-    }).finally(()=>{
-      this.__init_read_mode();
-      this.load_secretKeys()
+    
+    this.server_mode = true;
+    this.gitee_info = getToken();
+    this.gitee_enable = this.gitee_info.enable;
+    console.log(this.gitee_info);
 
-      this.__init_graph();
-      
-      this.__add_events();
-      this.__add_keyboard_events();
-      if(this.read_mode){this.__load_online_file()}
+    this.__init_read_mode();
+    this.load_secretKeys()
 
-    })
+    this.__init_graph();
+    
+    this.__add_events();
+    this.__add_keyboard_events();
+    if(this.read_mode){this.__load_online_file()}
     
   },
   methods:{ 
@@ -1003,6 +998,18 @@ export default {
         clipboard: {
           enabled: this.read_mode?false:true,
           useLocalStorage: this.read_mode?false:true,
+        },
+        scroller: {
+          enabled: false,
+        },
+        minimap: {
+          enabled: false,
+          width: 140,
+          height: 100,
+          container: document.getElementById('antv_minimap'),
+        },
+        translating: {
+          restrict: true,
         },
         grid: {
           size: 10,      // 网格大小 10px
@@ -1668,6 +1675,9 @@ export default {
       }
     },
     to_position:function(pos){
+      // console.log(this.graph)
+      // let pos_graph = this.graph.coord.localToGraphPoint(pos.x, pos.y)
+      // console.log(pos_graph)
       this.graph.translate(pos.x, pos.y)
     },
     __file_share_link:function(){
@@ -2216,6 +2226,19 @@ export default {
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style lang="scss" rel="stylesheet/scss" scoped>
+.mindbox-logo{
+  background-color: #4353b6;
+  height: 100%;
+  width: 100%;
+  background-size: contain;
+  display: block;
+  background-position: center;
+  background-repeat: no-repeat;
+  position: absolute;
+    top: 0;
+    left: 0;
+    color: white;
+}
 #app_{
   background:#EEE;
   position: absolute;
@@ -2300,6 +2323,7 @@ export default {
   font-weight: bold;
   float:left;
   .header_btn{
+    position: relative;
     height: 30px;
     width: calc(100% - 10px);
     background: rgba(255,255,255,0.5);
@@ -2313,6 +2337,7 @@ export default {
     padding: 0px 5px;
     box-sizing: border-box;
     white-space: nowrap;overflow: hidden;text-overflow: ellipsis;
+    i{font-style: normal;}
   }
   .header_name{
     height:15px;
@@ -2624,7 +2649,18 @@ export default {
     padding-bottom: 20px;
     font-family: 'KaTeX_Main';
 }
-#antv_container{background: white;}
+// #antv_container{background: white;}
+#antv_minimap{
+  position: absolute; 
+  width: 140px;
+  height: 100px; 
+  border-radius: 10px;
+  overflow: hidden; 
+  top: 10px;
+  right:10px;
+  background:transparent;
+  box-shadow: 0px 0px 10px -2px rgba(0,0,0,.2);
+}
 .md_node_note.markdown_mode{
       width: calc(35% - 20px);
     max-width: calc(35% - 20px);
@@ -2668,7 +2704,7 @@ export default {
     background:#111 !important;
   }
   #antv_container{
-    background:#222 !important;
+    background-color:transparent !important;
   }
   .btn.menu{
     background: #444;
@@ -2761,10 +2797,9 @@ export default {
 <style lang="scss" rel="stylesheet/scss">
 .x6-node *{font-family: 'KaTeX_Main';}
 .x6-widget-selection-box{
-    margin-top: -2px;
+  margin-top: 0px;
     margin-left: -2px;
-    padding-right: 0px;
-    padding-bottom: 0px;
+    padding: 0px;
     border-radius: 10px;
     border-color: #f56c6c;
     box-shadow: 0px 5px 10px rgba(0,0,0,.2);
@@ -3098,6 +3133,7 @@ tbody td:nth-child(1){
     border-top-left-radius: 3px;
   }
 }
+.node.anchor .name{color:white;}
 .node.fold.folding::after{
   content: "";
   position: absolute;
@@ -3281,12 +3317,19 @@ tbody td:nth-child(1){
         clip-path: inset(0 0 0 95%);
     }
 }
+.x6-widget-minimap .x6-graph{
+  box-shadow:none;
+}
 .dark_mode{
   // styles
   .x6-port-body{
     fill:#333;
     stroke:#222;
   }
+  .x6-widget-minimap{
+    background-color: #222;
+  }
+  .node.transparent{color:white;}
   .node.plain{
     border:2px solid #444;
     background: #333;
@@ -3326,6 +3369,26 @@ tbody td:nth-child(1){
     border:2px solid #343434;
     background: #222;
     color: white;
+  }
+  .node.pure-red{
+    background: #8d7174;
+    border-color: #8d7174;
+    color:white;
+  }
+  .node.pure-green{
+    background: #7c8f7c;
+    border-color: #7c8f7c;
+    color:white;
+  }
+  .node.pure-yellow{
+    background: #b6ae64;
+    border-color: #b6ae64;
+    color:white;
+  }
+  .node.pure-blue{
+    background: #647c8f;
+    border-color: #647c8f;
+    color:white;
   }
 }
 .secretKeysboard{
