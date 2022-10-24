@@ -5,7 +5,7 @@
 A MindMap application powered by **vue**, **antvis/X6** and **element**. This app is a pure web page without any backend for data interactions. Thus, it's **convenient** to build your own mindmap app.
 
 <p align="center">
-<img hight=300 src="pic_1.png"/><img hight=300 src="pic_2.png"/>
+<img height=300 src="pic_1.png"/><img height=300 src="pic_2.png"/>
 </p>
 
 Inspired by **XMind**, I designed the MindBox with many necessary and useful Features as follows:
