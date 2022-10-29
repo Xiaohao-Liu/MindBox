@@ -2836,6 +2836,12 @@ export default {
   .x6-port-body{
     visibility: hidden;
   }
+  .config_board{
+    display:flex;
+    .btn.plain.menu{
+      display:none;
+    }
+  }
 }
 .x6-port-body{
   opacity: 1 !important;
